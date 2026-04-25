@@ -51,22 +51,11 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Wordmark + device switcher */}
-      <section className="px-4 sm:px-8 pt-2 pb-4 flex flex-col items-center gap-2">
-        <h1
-          className="text-sm font-light uppercase text-foreground"
-          style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
-        >
-          Hashboard
-        </h1>
-        <MinerSwitcher />
-      </section>
-
-      {/* Slider area — centrerad och bredare */}
-      <section className="flex-1 flex items-stretch justify-center px-6 sm:px-8 pb-24 min-h-0">
+      {/* Slider area — perfekt centrerad */}
+      <section className="flex-1 flex items-stretch justify-center px-6 sm:px-8 pb-32 pt-4 min-h-0">
         <div className="flex items-stretch gap-6 sm:gap-10 w-full max-w-xl mx-auto">
-          {/* scale */}
-          <div className="flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
+          {/* scale (vänster) */}
+          <div className="w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
             <span>{miner.config.powerMax}</span>
             <span>
               {Math.round((miner.config.powerMax + miner.config.powerMin) / 2)}
@@ -74,8 +63,9 @@ const Index = () => {
             <span>{miner.config.powerMin}</span>
           </div>
 
+          {/* slider (mitten) */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="w-28 sm:w-32 h-full">
+            <div className="w-28 sm:w-36 h-full">
               <PowerSlider
                 min={miner.config.powerMin}
                 max={miner.config.powerMax}
@@ -86,8 +76,8 @@ const Index = () => {
             </div>
           </div>
 
-          {/* current target */}
-          <div className="flex flex-col items-end justify-center min-w-[4rem]">
+          {/* target (höger) — samma bredd som scale för balans */}
+          <div className="w-16 flex flex-col items-end justify-center">
             <span className="text-[9px] tracking-display text-muted-foreground/70">
               Target
             </span>
@@ -99,6 +89,17 @@ const Index = () => {
             </span>
           </div>
         </div>
+      </section>
+
+      {/* Wordmark + device switcher — längst ned */}
+      <section className="px-4 sm:px-8 pb-24 flex flex-col items-center gap-3">
+        <h1
+          className="text-sm font-light uppercase text-muted-foreground/80"
+          style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
+        >
+          Hashboard
+        </h1>
+        <MinerSwitcher />
       </section>
 
       {/* Footer controls */}

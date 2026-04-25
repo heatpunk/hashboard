@@ -20,20 +20,37 @@ export function MinerSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors">
-        <Circle
-          className={`h-2 w-2 ${
-            current?.status === "mining"
-              ? "fill-accent text-accent"
-              : current?.status === "paused"
-              ? "fill-muted-foreground text-muted-foreground"
-              : "fill-destructive text-destructive"
-          }`}
-        />
-        <span className="text-sm font-medium">
+      <DropdownMenuTrigger className="group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/80">
+        <span className="relative flex h-2 w-2 items-center justify-center">
+          <span
+            className="absolute inset-0 rounded-full blur-[2px]"
+            style={{
+              background:
+                current?.status === "mining"
+                  ? "hsl(140 80% 55% / 0.7)"
+                  : "transparent",
+            }}
+          />
+          <span
+            className="relative h-2 w-2 rounded-full"
+            style={{
+              background:
+                current?.status === "mining"
+                  ? "hsl(140 70% 50%)"
+                  : current?.status === "paused"
+                  ? "hsl(var(--muted-foreground))"
+                  : "hsl(var(--destructive))",
+              boxShadow:
+                current?.status === "mining"
+                  ? "0 0 6px hsl(140 80% 55% / 0.8)"
+                  : "none",
+            }}
+          />
+        </span>
+        <span className="text-xs tracking-display uppercase">
           {current?.config.name ?? "—"}
         </span>
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-1" />
+        <ChevronDown className="h-3.5 w-3.5 ml-1 opacity-70" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
         <DropdownMenuLabel className="text-[10px] tracking-display text-muted-foreground">
