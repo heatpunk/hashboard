@@ -41,17 +41,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border/60">
-        <div className="flex items-center gap-3">
-          <div className="h-2 w-2 rounded-full bg-foreground" />
-          <h1 className="text-xs tracking-display font-medium">Hashboard</h1>
-        </div>
-        <MinerSwitcher />
-      </header>
-
-      {/* Live readouts — discreet, single line */}
-      <section className="px-4 sm:px-8 pt-6 pb-2">
+      {/* Live readouts — högst upp, diskret enradig */}
+      <section className="px-4 sm:px-8 pt-6 pb-3">
         <div className="flex items-center justify-center flex-wrap gap-x-5 gap-y-1 max-w-3xl mx-auto opacity-70">
           <Readout label="W" value={Math.round(miner.live.watts).toString()} />
           <Readout label="TH/s" value={miner.live.th.toFixed(1)} />
@@ -60,9 +51,20 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Slider area */}
+      {/* Wordmark + device switcher */}
+      <section className="px-4 sm:px-8 pt-2 pb-4 flex flex-col items-center gap-2">
+        <h1
+          className="text-sm font-light uppercase text-foreground"
+          style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
+        >
+          Hashboard
+        </h1>
+        <MinerSwitcher />
+      </section>
+
+      {/* Slider area — centrerad och bredare */}
       <section className="flex-1 flex items-stretch justify-center px-6 sm:px-8 pb-24 min-h-0">
-        <div className="flex items-stretch gap-8 sm:gap-12 w-full max-w-md">
+        <div className="flex items-stretch gap-6 sm:gap-10 w-full max-w-xl mx-auto">
           {/* scale */}
           <div className="flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
             <span>{miner.config.powerMax}</span>
@@ -72,14 +74,16 @@ const Index = () => {
             <span>{miner.config.powerMin}</span>
           </div>
 
-          <div className="flex-1 flex items-center">
-            <PowerSlider
-              min={miner.config.powerMin}
-              max={miner.config.powerMax}
-              value={miner.config.powerTarget}
-              onChange={(v) => setPower(miner.id, v)}
-              disabled={paused}
-            />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-28 sm:w-32 h-full">
+              <PowerSlider
+                min={miner.config.powerMin}
+                max={miner.config.powerMax}
+                value={miner.config.powerTarget}
+                onChange={(v) => setPower(miner.id, v)}
+                disabled={paused}
+              />
+            </div>
           </div>
 
           {/* current target */}
