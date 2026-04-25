@@ -30,14 +30,9 @@ export function MinerSwitcher() {
               : "fill-destructive text-destructive"
           }`}
         />
-        <div className="flex flex-col items-start leading-tight">
-          <span className="text-[10px] tracking-display text-muted-foreground">
-            Device
-          </span>
-          <span className="text-sm font-medium">
-            {current?.config.name ?? "—"}
-          </span>
-        </div>
+        <span className="text-sm font-medium">
+          {current?.config.name ?? "—"}
+        </span>
         <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-1" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
