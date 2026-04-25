@@ -50,25 +50,13 @@ const Index = () => {
         <MinerSwitcher />
       </header>
 
-      {/* Live readouts */}
-      <section className="px-4 sm:px-8 pt-8 pb-4">
-        <div className="grid grid-cols-4 gap-2 sm:gap-6 max-w-3xl mx-auto">
-          <Readout
-            label="W"
-            value={Math.round(miner.live.watts).toString()}
-            unit="watt"
-          />
-          <Readout
-            label="TH"
-            value={miner.live.th.toFixed(1)}
-            unit="th/s"
-          />
-          <Readout label="W/TH" value={wth} unit="ratio" />
-          <Readout
-            label="CT"
-            value={Math.round(miner.live.chipTemp).toString()}
-            unit="°c"
-          />
+      {/* Live readouts — discreet, single line */}
+      <section className="px-4 sm:px-8 pt-6 pb-2">
+        <div className="flex items-center justify-center flex-wrap gap-x-5 gap-y-1 max-w-3xl mx-auto opacity-70">
+          <Readout label="W" value={Math.round(miner.live.watts).toString()} />
+          <Readout label="TH/s" value={miner.live.th.toFixed(1)} />
+          <Readout label="W/TH" value={wth} />
+          <Readout label="°C" value={Math.round(miner.live.chipTemp).toString()} />
         </div>
       </section>
 
@@ -95,14 +83,14 @@ const Index = () => {
           </div>
 
           {/* current target */}
-          <div className="flex flex-col items-end justify-center min-w-[5rem]">
-            <span className="text-[10px] tracking-display text-muted-foreground">
+          <div className="flex flex-col items-end justify-center min-w-[4rem]">
+            <span className="text-[9px] tracking-display text-muted-foreground/70">
               Target
             </span>
-            <span className="font-readout text-3xl sm:text-4xl font-light leading-none mt-1">
+            <span className="font-readout text-xl sm:text-2xl font-light leading-none mt-1.5 tabular-nums">
               {Math.round(miner.config.powerTarget)}
             </span>
-            <span className="text-[10px] tracking-display text-muted-foreground mt-1">
+            <span className="text-[9px] tracking-display text-muted-foreground/60 mt-1">
               watt
             </span>
           </div>
