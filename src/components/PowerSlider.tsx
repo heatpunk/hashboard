@@ -8,7 +8,8 @@ interface Props {
   disabled?: boolean;
 }
 
-/** Vertical, frictionless power slider with gradient track. */
+/** Vertical, steglös power slider. Gradient-bakgrunden visas alltid;
+ *  reglaget är en tunn, exklusiv linje som glider med pekaren. */
 export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -22,6 +23,7 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
       const rect = el.getBoundingClientRect();
       const ratio = 1 - (clientY - rect.top) / rect.height;
       const clamped = Math.min(1, Math.max(0, ratio));
+      // steglöst — ingen avrundning här
       onChange(min + clamped * (max - min));
     },
     [min, max, onChange]
@@ -29,13 +31,18 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
 
   useEffect(() => {
     if (!dragging) return;
-    const move = (e: PointerEvent) => update(e.clientY);
+    const move = (e: PointerEvent) => {
+      e.preventDefault();
+      update(e.clientY);
+    };
     const up = () => setDragging(false);
-    window.addEventListener("pointermove", move);
+    window.addEventListener("pointermove", move, { passive: false });
     window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
     return () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
     };
   }, [dragging, update]);
 
@@ -49,8 +56,8 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
           setDragging(true);
           update(e.clientY);
         }}
-        className={`relative h-full w-16 rounded-full overflow-hidden cursor-pointer transition-opacity ${
-          disabled ? "opacity-40 cursor-not-allowed" : ""
+        className={`relative h-full w-14 rounded-full overflow-hidden touch-none transition-opacity ${
+          disabled ? "opacity-40 cursor-not-allowed" : "cursor-ns-resize"
         }`}
         role="slider"
         aria-valuemin={min}
@@ -60,33 +67,48 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
         tabIndex={0}
         onKeyDown={(e) => {
           if (disabled) return;
-          const step = (max - min) / 100;
+          const step = (max - min) / 200;
           if (e.key === "ArrowUp") onChange(Math.min(max, value + step));
           if (e.key === "ArrowDown") onChange(Math.max(min, value - step));
         }}
       >
-        {/* faint track */}
-        <div className="absolute inset-0 bg-secondary" />
-        {/* filled gradient up to value */}
+        {/* Full gradient — alltid synlig, mjukt nedtonad */}
+        <div className="absolute inset-0 power-gradient opacity-25" />
+
+        {/* Aktiv del — gradient med full styrka upp till värdet */}
         <div
-          className="absolute inset-x-0 bottom-0 power-gradient transition-[height] duration-150 ease-out"
-          style={{ height: `${pct}%` }}
+          className="absolute inset-x-0 bottom-0 power-gradient"
+          style={{
+            height: `${pct}%`,
+            transition: dragging ? "none" : "height 120ms ease-out",
+          }}
         />
-        {/* hairline marks */}
+
+        {/* Hairline-markeringar */}
         <div className="absolute inset-0 pointer-events-none">
           {[0.25, 0.5, 0.75].map((t) => (
             <div
               key={t}
-              className="absolute left-0 right-0 h-px"
+              className="absolute left-3 right-3 h-px"
               style={{ bottom: `${t * 100}%`, background: "hsl(var(--hairline))" }}
             />
           ))}
         </div>
-        {/* thumb indicator */}
+
+        {/* Tunn, exklusiv reglage-linje */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-foreground/90 shadow-[0_0_0_3px_hsl(var(--background))]"
-          style={{ bottom: `calc(${pct}% - 2px)` }}
-        />
+          className="absolute left-0 right-0 pointer-events-none"
+          style={{
+            bottom: `${pct}%`,
+            transform: "translateY(50%)",
+            transition: dragging ? "none" : "bottom 120ms ease-out",
+          }}
+        >
+          <div
+            className="h-px w-full"
+            style={{ background: "hsl(var(--foreground))" }}
+          />
+        </div>
       </div>
     </div>
   );
