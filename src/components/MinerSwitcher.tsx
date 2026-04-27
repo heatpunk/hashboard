@@ -20,7 +20,7 @@ export function MinerSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/80">
+      <DropdownMenuTrigger className="group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/70">
         <span className="relative flex h-2 w-2 items-center justify-center">
           <span
             className="absolute inset-0 rounded-full blur-[2px]"
@@ -47,7 +47,7 @@ export function MinerSwitcher() {
             }}
           />
         </span>
-        <span className="text-xs tracking-display uppercase">
+        <span className="text-[11px] tracking-display uppercase">
           {current?.config.name ?? "—"}
         </span>
         <ChevronDown className="h-3.5 w-3.5 ml-1 opacity-70" />

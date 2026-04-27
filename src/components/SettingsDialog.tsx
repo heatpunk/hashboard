@@ -34,7 +34,7 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
     setName(miner.config.name);
     setPMin(miner.config.powerMin);
     setPMax(miner.config.powerMax);
-  }, [miner, open]);
+  }, [miner?.id, open]);
 
   if (!miner) return null;
 

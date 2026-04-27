@@ -42,7 +42,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Live readouts — högst upp, diskret enradig */}
-      <section className="px-4 sm:px-8 pt-6 pb-3">
+      <section className="px-4 sm:px-8 pt-6 pb-2">
         <div className="flex items-center justify-center flex-wrap gap-x-5 gap-y-1 max-w-3xl mx-auto opacity-70">
           <Readout label="W" value={Math.round(miner.live.watts).toString()} />
           <Readout label="TH/s" value={miner.live.th.toFixed(1)} />
@@ -52,10 +52,10 @@ const Index = () => {
       </section>
 
       {/* Slider area — perfekt centrerad */}
-      <section className="flex-1 flex items-stretch justify-center px-6 sm:px-8 pb-32 pt-4 min-h-0">
-        <div className="flex items-stretch gap-6 sm:gap-10 w-full max-w-xl mx-auto">
+      <section className="flex-1 flex items-stretch justify-center px-4 sm:px-8 pt-2 pb-16 min-h-0">
+        <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto min-h-[58vh]">
           {/* scale (vänster) */}
-          <div className="w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
+          <div className="w-14 sm:w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
             <span>{miner.config.powerMax}</span>
             <span>
               {Math.round((miner.config.powerMax + miner.config.powerMin) / 2)}
@@ -65,7 +65,7 @@ const Index = () => {
 
           {/* slider (mitten) */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="w-28 sm:w-36 h-full">
+            <div className="w-32 sm:w-40 h-full max-h-none">
               <PowerSlider
                 min={miner.config.powerMin}
                 max={miner.config.powerMax}
@@ -77,7 +77,7 @@ const Index = () => {
           </div>
 
           {/* target (höger) — samma bredd som scale för balans */}
-          <div className="w-16 flex flex-col items-end justify-center">
+          <div className="w-14 sm:w-16 flex flex-col items-end justify-center">
             <span className="text-[9px] tracking-display text-muted-foreground/70">
               Target
             </span>
@@ -91,23 +91,22 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Wordmark + device switcher — längst ned */}
-      <section className="px-4 sm:px-8 pb-24 flex flex-col items-center gap-3">
+      {/* Wordmark */}
+      <section className="px-4 sm:px-8 pb-16 pt-1 flex justify-center">
         <h1
           className="text-sm font-light uppercase text-muted-foreground/80"
           style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
         >
           Hashboard
         </h1>
-        <MinerSwitcher />
       </section>
 
       {/* Footer controls */}
-      <footer className="fixed bottom-0 inset-x-0 px-4 sm:px-8 pb-6 pt-3 flex items-center justify-between pointer-events-none">
+      <footer className="fixed bottom-0 inset-x-0 px-4 sm:px-8 pb-6 pt-3 grid grid-cols-[1fr_auto_1fr] items-center pointer-events-none">
         <button
           onClick={() => togglePause(miner.id)}
           aria-label={paused ? "Resume mining" : "Pause mining"}
-          className="pointer-events-auto h-11 w-11 rounded-full border border-border bg-surface-elevated/80 backdrop-blur flex items-center justify-center hover:bg-secondary transition-colors"
+          className="pointer-events-auto justify-self-start h-11 w-11 rounded-full border border-border bg-surface-elevated/80 backdrop-blur flex items-center justify-center hover:bg-secondary transition-colors"
           style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
         >
           {paused ? (
@@ -117,10 +116,14 @@ const Index = () => {
           )}
         </button>
 
+        <div className="pointer-events-auto justify-self-center">
+          <MinerSwitcher />
+        </div>
+
         <button
           onClick={() => setSettingsOpen(true)}
           aria-label="Settings"
-          className="pointer-events-auto h-11 w-11 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+          className="pointer-events-auto justify-self-end h-11 w-11 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
           style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
         >
           <Settings className="h-4 w-4" />
