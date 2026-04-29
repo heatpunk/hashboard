@@ -91,16 +91,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Wordmark */}
-      <section className="px-4 sm:px-8 pb-16 pt-1 flex justify-center">
-        <h1
-          className="text-sm font-light uppercase text-muted-foreground/80"
-          style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
-        >
-          Hashboard
-        </h1>
-      </section>
-
       {/* Footer controls */}
       <footer className="fixed bottom-0 inset-x-0 px-4 sm:px-8 pb-6 pt-3 grid grid-cols-[1fr_auto_1fr] items-center pointer-events-none">
         <button
