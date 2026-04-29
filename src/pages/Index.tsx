@@ -42,18 +42,18 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Live readouts — högst upp, diskret enradig */}
-      <section className="px-4 sm:px-8 pt-6 pb-2">
-        <div className="flex items-center justify-center flex-wrap gap-x-5 gap-y-1 max-w-3xl mx-auto opacity-70">
+      <header className="px-4 sm:px-8 pt-2 pb-0 shrink-0">
+        <div className="flex items-center justify-center flex-wrap gap-x-5 gap-y-0 max-w-3xl mx-auto opacity-70">
           <Readout label="W" value={Math.round(miner.live.watts).toString()} />
           <Readout label="TH/s" value={miner.live.th.toFixed(1)} />
           <Readout label="W/TH" value={wth} />
           <Readout label="°C" value={Math.round(miner.live.chipTemp).toString()} />
         </div>
-      </section>
+      </header>
 
-      {/* Slider area — perfekt centrerad */}
-      <section className="flex-1 flex items-stretch justify-center px-4 sm:px-8 pt-2 pb-16 min-h-0">
-        <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto min-h-[58vh]">
+      {/* Slider area — fyller utrymmet mellan header och footer */}
+      <section className="flex-1 flex items-stretch justify-center px-4 sm:px-8 py-6 min-h-0">
+        <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto">
           {/* scale (vänster) */}
           <div className="w-14 sm:w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
             <span>{miner.config.powerMax}</span>
