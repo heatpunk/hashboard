@@ -91,34 +91,46 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer controls */}
-      <footer className="fixed bottom-0 inset-x-0 px-4 sm:px-8 pb-6 pt-3 grid grid-cols-[1fr_auto_1fr] items-center pointer-events-none">
-        <button
-          onClick={() => togglePause(miner.id)}
-          aria-label={paused ? "Resume mining" : "Pause mining"}
-          className="pointer-events-auto justify-self-start h-11 w-11 rounded-full border border-border bg-surface-elevated/80 backdrop-blur flex items-center justify-center hover:bg-secondary transition-colors"
-          style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
+      {/* Footer */}
+      <footer className="fixed bottom-0 inset-x-0 px-4 sm:px-8 pb-4 pt-3 flex flex-col items-center gap-3 pointer-events-none">
+        {/* Wordmark — top of footer */}
+        <h1
+          className="text-sm font-light uppercase text-muted-foreground/80"
+          style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
         >
-          {paused ? (
-            <Play className="h-4 w-4" />
-          ) : (
-            <Pause className="h-4 w-4" />
-          )}
-        </button>
+          Hashboard
+        </h1>
 
-        <div className="pointer-events-auto justify-self-center">
-          <MinerSwitcher />
+        {/* Controls row */}
+        <div className="w-full grid grid-cols-3 items-center">
+          <button
+            onClick={() => togglePause(miner.id)}
+            aria-label={paused ? "Resume mining" : "Pause mining"}
+            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full border border-border backdrop-blur flex items-center justify-center hover:bg-secondary transition-colors"
+            style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
+          >
+            {paused ? (
+              <Play className="h-4 w-4" />
+            ) : (
+              <Pause className="h-4 w-4" />
+            )}
+          </button>
+
+          <div className="pointer-events-auto justify-self-center">
+            <MinerSwitcher />
+          </div>
+
+          <button
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Settings"
+            className="pointer-events-auto justify-self-end h-11 w-11 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+            style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
+          >
+            <Settings className="h-4 w-4" />
+          </button>
         </div>
-
-        <button
-          onClick={() => setSettingsOpen(true)}
-          aria-label="Settings"
-          className="pointer-events-auto justify-self-end h-11 w-11 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
-          style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
-        >
-          <Settings className="h-4 w-4" />
-        </button>
       </footer>
+
 
       <SettingsDialog
         open={settingsOpen}
