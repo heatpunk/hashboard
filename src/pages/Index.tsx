@@ -91,9 +91,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Spacer matching fixed footer height så slidern blir optiskt centrerad */}
-      <div aria-hidden className="h-20 shrink-0" />
-
       {/* Footer controls */}
       <footer className="fixed bottom-0 inset-x-0 px-4 sm:px-8 pb-6 pt-3 grid grid-cols-[1fr_auto_1fr] items-center pointer-events-none">
         <button
