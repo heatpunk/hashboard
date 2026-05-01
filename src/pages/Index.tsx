@@ -52,8 +52,8 @@ const Index = () => {
       </header>
 
       {/* Slider area — vertikalt centrerad mellan header och footer */}
-      <section className="flex-1 flex items-center justify-center px-4 sm:px-8 pb-32 min-h-0">
-        <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto h-[70vh] max-h-full">
+      <section className="flex-1 flex items-center justify-center px-4 sm:px-8 py-4 min-h-0">
+        <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto h-full">
           {/* scale (vänster) */}
           <div className="w-14 sm:w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
             <span>{miner.config.powerMax}</span>
@@ -92,7 +92,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 inset-x-0 px-4 sm:px-8 pb-4 pt-3 flex flex-col items-center gap-3 pointer-events-none">
+      <footer className="shrink-0 px-4 sm:px-8 pb-4 pt-3 flex flex-col items-center gap-3">
         {/* Wordmark — top of footer */}
         <h1
           className="text-sm font-light uppercase text-muted-foreground/80"
