@@ -52,8 +52,8 @@ const Index = () => {
       </header>
 
       {/* Slider area — vertikalt centrerad mellan header och footer */}
-      <section className="flex-1 flex items-center justify-center px-4 sm:px-8 pb-32 min-h-0">
-        <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto h-[70vh] max-h-full">
+      <section className="flex-1 flex items-center justify-center px-4 sm:px-8 py-4 min-h-0">
+        <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto h-full">
           {/* scale (vänster) */}
           <div className="w-14 sm:w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
             <span>{miner.config.powerMax}</span>
