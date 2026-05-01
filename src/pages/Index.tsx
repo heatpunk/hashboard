@@ -92,7 +92,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 inset-x-0 px-4 sm:px-8 pb-4 pt-3 flex flex-col items-center gap-3 pointer-events-none">
+      <footer className="shrink-0 px-4 sm:px-8 pb-4 pt-3 flex flex-col items-center gap-3">
         {/* Wordmark — top of footer */}
         <h1
           className="text-sm font-light uppercase text-muted-foreground/80"
