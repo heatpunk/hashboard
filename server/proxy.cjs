@@ -192,8 +192,8 @@ http.createServer(async (req, res) => {
 }).listen(PORT, '127.0.0.1', () => {
   const lanIp = Object.values(os.networkInterfaces())
     .flat()
-    .find(n => n.family === 'IPv4' && !n.internal)?.address ?? 'okänd';
-  console.log(`Hashboard proxy → http://127.0.0.1:${PORT} (intern)`);
-  console.log(`Hashboard UI   → http://${lanIp}:8080  ← öppna denna på mobil/surfplatta`);
-  console.log('Bryggar webbläsaren mot CGMiner TCP (port 4028) på LAN.');
+    .find(n => n.family === 'IPv4' && !n.internal)?.address ?? 'unknown';
+  console.log(`Hashboard proxy → http://127.0.0.1:${PORT} (internal)`);
+  console.log(`Hashboard UI   → http://${lanIp}:8080  ← open this on phone/tablet`);
+  console.log('Bridges the browser to the miner CGMiner TCP API (port 4028) on the LAN.');
 });

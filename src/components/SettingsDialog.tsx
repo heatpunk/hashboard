@@ -111,8 +111,8 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
             </div>
             <p className="text-[10px] text-muted-foreground/70 leading-snug">
               {miner.boards
-                ? `${miner.boards.active} / ${miner.boards.total} hashboards aktiva — gränserna skalas efter detta`
-                : "Skalas efter aktiva hashboards"}
+                ? `${miner.boards.active} / ${miner.boards.total} hashboards active — limits scale to this`
+                : "Scaled to active hashboards"}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -121,17 +121,17 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
                   type="number"
                   value={miner.config.powerMin}
                   readOnly
-                  title="Skalas efter aktiva hashboards - andras inte har"
+                  title="Scaled to active hashboards — not editable here"
                   className="font-readout opacity-60 cursor-not-allowed"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Max (maskin)</Label>
+                <Label className="text-[10px] text-muted-foreground">Max (machine)</Label>
                 <Input
                   type="number"
                   value={miner.config.powerMax}
                   readOnly
-                  title="Hämtas från maskinens inställda target — kan inte höjas här"
+                  title="From the miner's configured target — can't be raised here"
                   className="font-readout opacity-60 cursor-not-allowed"
                 />
               </div>
