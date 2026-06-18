@@ -56,22 +56,6 @@ const Index = () => {
           <Readout label="W/TH" value={wth} />
           <Readout label="°C" value={Math.round(miner.live.chipTemp).toString()} />
         </div>
-        {/* Live / Sim badge */}
-        <div className="flex justify-center mt-1">
-          <span
-            className="text-[9px] tracking-display px-2 py-0.5 rounded-full"
-            style={{
-              background: liveMode
-                ? "hsl(140 60% 50% / 0.15)"
-                : "hsl(var(--muted) / 0.5)",
-              color: liveMode
-                ? "hsl(140 70% 45%)"
-                : "hsl(var(--muted-foreground))",
-            }}
-          >
-            {liveMode ? "LIVE" : "SIM"}
-          </span>
-        </div>
       </header>
 
       {/* Slider area */}

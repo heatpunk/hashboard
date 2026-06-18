@@ -27,7 +27,6 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
   const removeMiner = useMiners((s) => s.removeMiner);
   const theme = useMiners((s) => s.theme);
   const toggleTheme = useMiners((s) => s.toggleTheme);
-  const liveMode = useMiners((s) => s.liveMode);
 
   const [name, setName] = useState("");
   const [ip, setIp] = useState("");
@@ -49,21 +48,8 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
           <DialogTitle className="tracking-display text-xs font-medium">
             Settings
           </DialogTitle>
-          <DialogDescription className="text-xs flex items-center gap-2">
+          <DialogDescription className="text-xs">
             {miner.model}
-            <span
-              className="px-1.5 py-0.5 rounded-full text-[9px] tracking-display"
-              style={{
-                background: liveMode
-                  ? "hsl(140 60% 50% / 0.15)"
-                  : "hsl(var(--muted) / 0.5)",
-                color: liveMode
-                  ? "hsl(140 70% 45%)"
-                  : "hsl(var(--muted-foreground))",
-              }}
-            >
-              {liveMode ? "LIVE" : "SIM"}
-            </span>
           </DialogDescription>
         </DialogHeader>
 
