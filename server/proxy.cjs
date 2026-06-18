@@ -1,6 +1,7 @@
 'use strict';
 const http = require('http');
 const net = require('net');
+const os = require('os');
 
 const PORT = 8081;
 const CGMINER_PORT = 4028;
@@ -159,6 +160,10 @@ http.createServer(async (req, res) => {
 
   send(res, 404, { ok: false, error: 'Not found' });
 }).listen(PORT, '127.0.0.1', () => {
-  console.log(`Hashboard proxy → http://127.0.0.1:${PORT}`);
-  console.log('Bridges browser ↔ CGMiner TCP (port 4028) on LAN.');
+  const lanIp = Object.values(os.networkInterfaces())
+    .flat()
+    .find(n => n.family === 'IPv4' && !n.internal)?.address ?? 'okänd';
+  console.log(`Hashboard proxy → http://127.0.0.1:${PORT} (intern)`);
+  console.log(`Hashboard UI   → http://${lanIp}:8080  ← öppna denna på mobil/surfplatta`);
+  console.log('Bryggar webbläsaren mot CGMiner TCP (port 4028) på LAN.');
 });
