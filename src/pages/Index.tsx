@@ -44,7 +44,7 @@ const Index = () => {
     miner.live.th > 0.5
       ? (miner.live.watts / miner.live.th).toFixed(1)
       : "—";
-  const paused = miner.status === "paused";
+  const paused = liveMode ? miner.live.th <= 0.5 : miner.status === "paused";
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">

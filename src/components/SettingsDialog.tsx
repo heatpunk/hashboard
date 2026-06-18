@@ -48,7 +48,7 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="tracking-display text-xs font-medium">
             Settings
