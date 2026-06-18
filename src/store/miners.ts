@@ -11,6 +11,7 @@ const seed = (): Miner[] => [
     ip: "192.168.1.106",
     model: "Antminer S19j Pro",
     status: "mining",
+    boards: { active: 2, total: 3 },
     config: {
       name: "Miner 01",
       powerMin: 944,
@@ -131,19 +132,24 @@ export const useMiners = create<State>()(
             const snap = entry?.snap;
             if (!snap) return m;
             const live = snap.live;
-            // Slider ceiling follows the miner's own configured target; the
-            // user can never push the target above what the machine is set to.
+            // Bounds are scaled to the active hashboards (active / total) by the
+            // proxy: ceiling = machine target x ratio, floor = Braiins min x ratio.
             const powerMax =
               snap.machineTarget != null && snap.machineTarget > 0
                 ? snap.machineTarget
                 : m.config.powerMax;
+            const powerMin =
+              snap.machineMin != null && snap.machineMin > 0
+                ? Math.min(snap.machineMin, powerMax)
+                : m.config.powerMin;
             const powerTarget = Math.min(
               powerMax,
-              Math.max(m.config.powerMin, m.config.powerTarget)
+              Math.max(powerMin, m.config.powerTarget)
             );
             return {
               ...m,
-              config: { ...m.config, powerMax, powerTarget },
+              boards: snap.boards ?? m.boards,
+              config: { ...m.config, powerMin, powerMax, powerTarget },
               live: {
                 th: live.th,
                 watts: live.watts ?? m.live.watts,

@@ -31,15 +31,11 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
 
   const [name, setName] = useState("");
   const [ip, setIp] = useState("");
-  const [pMin, setPMin] = useState(500);
-  const [pMax, setPMax] = useState(1500);
 
   useEffect(() => {
     if (!miner) return;
     setName(miner.config.name);
     setIp(miner.ip);
-    setPMin(miner.config.powerMin);
-    setPMax(miner.config.powerMax);
   }, [miner?.id, open]);
 
   if (!miner) return null;
@@ -110,25 +106,30 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
                 Power range
               </Label>
               <span className="font-readout text-xs text-muted-foreground">
-                {pMin}–{pMax} W
+                {miner.config.powerMin}–{miner.config.powerMax} W
               </span>
             </div>
+            <p className="text-[10px] text-muted-foreground/70 leading-snug">
+              {miner.boards
+                ? `${miner.boards.active} / ${miner.boards.total} hashboards aktiva — gränserna skalas efter detta`
+                : "Skalas efter aktiva hashboards"}
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">Min</Label>
                 <Input
                   type="number"
-                  value={pMin}
-                  onChange={(e) => setPMin(Number(e.target.value))}
-                  onBlur={() => updateConfig(miner.id, { powerMin: pMin })}
-                  className="font-readout"
+                  value={miner.config.powerMin}
+                  readOnly
+                  title="Skalas efter aktiva hashboards - andras inte har"
+                  className="font-readout opacity-60 cursor-not-allowed"
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">Max (maskin)</Label>
                 <Input
                   type="number"
-                  value={pMax}
+                  value={miner.config.powerMax}
                   readOnly
                   title="Hämtas från maskinens inställda target — kan inte höjas här"
                   className="font-readout opacity-60 cursor-not-allowed"

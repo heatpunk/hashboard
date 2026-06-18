@@ -92,6 +92,23 @@ function normalizeLive(summary, stats, temps, fans, tuner) {
   return { th, watts, chipTemp, fanSpeed };
 }
 
+const TOTAL_BOARDS = 3;        // S19j Pro hashboard slots
+const MIN_POWER_FULL_W = 944;  // Braiins min power target for a full S19j Pro (not exposed via the socket API)
+
+// Scale the machine's full (all-boards) power target + Braiins floor down to
+// the boards that are actually active (active / total).
+function buildConfig(tuner, temps) {
+  const fullTarget = (tuner?.TUNERSTATUS ?? [])[0]?.PowerLimit ?? null;
+  const active = (temps?.TEMPS ?? []).length || TOTAL_BOARDS;
+  const factor = TOTAL_BOARDS > 0 ? active / TOTAL_BOARDS : 1;
+  return {
+    powerTarget: fullTarget != null ? Math.round(fullTarget * factor) : null,
+    powerMin: Math.round(MIN_POWER_FULL_W * factor),
+    fullTarget,
+    boards: { active, total: TOTAL_BOARDS },
+  };
+}
+
 function detectModel(stats) {
   const st = (stats?.STATS ?? []).find(x => x.Type) ?? {};
   return st.Type || 'Antminer';
@@ -107,7 +124,7 @@ async function probeMiner(ip) {
       cgMinerQuery(ip, 'fans').catch(() => ({})),
       cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
     ]);
-    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner), config: { powerTarget: (tuner?.TUNERSTATUS ?? [])[0]?.PowerLimit ?? null } };
+    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner), config: buildConfig(tuner, temps) };
   } catch {
     return null;
   }
@@ -153,7 +170,7 @@ http.createServer(async (req, res) => {
       return send(res, 200, {
         ok: true,
         live: normalizeLive(summary, stats, temps, fans, tuner),
-        config: { powerTarget: (tuner?.TUNERSTATUS ?? [])[0]?.PowerLimit ?? null },
+        config: buildConfig(tuner, temps),
         model: detectModel(stats),
       });
     } catch (err) {

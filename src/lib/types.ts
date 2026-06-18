@@ -33,6 +33,8 @@ export interface Miner {
   ip: string;
   model: string;
   status: MinerStatus;
+  /** active vs total hashboards, populated from the miner */
+  boards?: { active: number; total: number };
   config: MinerConfig;
   live: MinerLive;
 }
