@@ -32,6 +32,8 @@ interface State {
   scanning: boolean;
   /** true when at least one miner responded with real data on last poll */
   liveMode: boolean;
+  /** miner id awaiting a control-API password, with the desired paused state */
+  pwPrompt: { minerId: string; paused: boolean } | null;
 
   select: (id: string) => void;
   setTheme: (t: "light" | "dark") => void;
@@ -40,6 +42,8 @@ interface State {
   updateConfig: (id: string, patch: Partial<MinerConfig>) => void;
   updateIp: (id: string, ip: string) => void;
   togglePause: (id: string) => Promise<void>;
+  submitMinerPassword: (pw: string) => Promise<void>;
+  dismissPwPrompt: () => void;
   removeMiner: (id: string) => void;
   scan: () => Promise<void>;
   /** Poll live data from the real miner API via the local proxy */
@@ -56,6 +60,7 @@ export const useMiners = create<State>()(
       theme: "dark",
       scanning: false,
       liveMode: false,
+      pwPrompt: null,
 
       select: (id) => set({ selectedId: id }),
       setTheme: (t) => set({ theme: t }),
@@ -102,17 +107,47 @@ export const useMiners = create<State>()(
         const m = miners.find((x) => x.id === id);
         if (!m) return;
         const currentlyPaused = liveMode ? m.live.th <= 0.5 : m.status === "paused";
-        // Optimistic local flip; the next poll reflects the miner's real state.
+        const desiredPaused = !currentlyPaused;
+        const res = await setMinerPaused(m.ip, desiredPaused, m.config.apiPassword);
+        if (res.needPassword) {
+          set({ pwPrompt: { minerId: id, paused: desiredPaused } });
+          return;
+        }
+        if (res.ok) {
+          set((s) => ({
+            miners: s.miners.map((x) =>
+              x.id === id ? { ...x, status: desiredPaused ? "paused" : "mining" } : x
+            ),
+          }));
+        }
+      },
+
+      submitMinerPassword: async (pw) => {
+        const prompt = get().pwPrompt;
+        if (!prompt) return;
+        const { minerId, paused } = prompt;
         set((s) => ({
+          pwPrompt: null,
           miners: s.miners.map((x) =>
-            x.id === id
-              ? { ...x, status: currentlyPaused ? "mining" : "paused" }
-              : x
+            x.id === minerId ? { ...x, config: { ...x.config, apiPassword: pw } } : x
           ),
         }));
-        // Real command to the miner: pause -> 'pause', resume -> 'resume'.
-        await setMinerPaused(m.ip, !currentlyPaused);
+        const m = get().miners.find((x) => x.id === minerId);
+        if (m) {
+          const res = await setMinerPaused(m.ip, paused, pw);
+          if (res.ok) {
+            set((s) => ({
+              miners: s.miners.map((x) =>
+                x.id === minerId ? { ...x, status: paused ? "paused" : "mining" } : x
+              ),
+            }));
+          } else if (res.needPassword) {
+            set({ pwPrompt: { minerId, paused } });
+          }
+        }
       },
+
+      dismissPwPrompt: () => set({ pwPrompt: null }),
 
       removeMiner: (id) =>
         set((s) => {

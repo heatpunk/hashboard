@@ -4,6 +4,7 @@ import { PowerSlider } from "@/components/PowerSlider";
 import { Readout } from "@/components/Readout";
 import { MinerSwitcher } from "@/components/MinerSwitcher";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { PasswordDialog } from "@/components/PasswordDialog";
 import { Settings, Pause, Play } from "lucide-react";
 
 const Index = () => {
@@ -133,6 +134,7 @@ const Index = () => {
         onOpenChange={setSettingsOpen}
         minerId={miner.id}
       />
+      <PasswordDialog />
     </div>
   );
 };

@@ -40,17 +40,20 @@ export async function fetchMinerStats(ip: string): Promise<MinerSnapshot | null>
   }
 }
 
-export async function setMinerPaused(ip: string, paused: boolean): Promise<boolean> {
+export interface ControlResult { ok: boolean; needPassword?: boolean }
+
+export async function setMinerPaused(ip: string, paused: boolean, password?: string): Promise<ControlResult> {
   try {
     const res = await fetch(`/api/miners/${encodeURIComponent(ip)}/${paused ? 'pause' : 'resume'}`, {
       method: 'POST',
-      signal: AbortSignal.timeout(6000),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: password ?? '' }),
+      signal: AbortSignal.timeout(15000),
     });
-    if (!res.ok) return false;
-    const data = await res.json();
-    return !!data.ok;
+    const data = await res.json().catch(() => ({}));
+    return { ok: !!data.ok, needPassword: !!data.needPassword };
   } catch {
-    return false;
+    return { ok: false };
   }
 }
 

@@ -15,6 +15,8 @@ export interface MinerConfig {
   fanManual: number;
   /** auto fan range [low, high] in 0..100 */
   fanAutoRange: [number, number];
+  /** BraiinsOS+ control-API password (username root); stored on device */
+  apiPassword?: string;
 }
 
 export interface MinerLive {

@@ -5,6 +5,10 @@ const os = require('os');
 
 const PORT = 8081;
 const CGMINER_PORT = 4028;
+const { execFile } = require('child_process');
+const GRPCURL = process.env.GRPCURL || 'grpcurl';
+const GRPC_PORT = 50051;
+const HOST_RE = /^[a-zA-Z0-9.\-]+$/;
 
 function cgMinerQuery(ip, command) {
   return new Promise((resolve, reject) => {
@@ -141,6 +145,24 @@ async function scanSubnet(subnet) {
   return results;
 }
 
+function grpcCall(ip, method, payload, token) {
+  return new Promise((resolve, reject) => {
+    const args = ['-plaintext', '-max-time', '10'];
+    if (token) args.push('-H', 'authorization: ' + token);
+    args.push('-d', JSON.stringify(payload || {}), ip + ':' + GRPC_PORT, method);
+    execFile(GRPCURL, args, { timeout: 12000 }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(((stderr || '') + (err.message || '')).trim() || 'grpc error'));
+      try { resolve(stdout.trim() ? JSON.parse(stdout) : {}); } catch { resolve({}); }
+    });
+  });
+}
+
+async function minerLogin(ip, password) {
+  const r = await grpcCall(ip, 'braiins.bos.v1.AuthenticationService/Login', { username: 'root', password: password || '' });
+  if (!r.token) throw new Error('login failed');
+  return r.token;
+}
+
 function send(res, status, body) {
   res.writeHead(status, {
     'Content-Type': 'application/json',
@@ -181,15 +203,31 @@ http.createServer(async (req, res) => {
   const ctrlMatch = url.pathname.match(/^\/api\/miners\/([^/]+)\/(pause|resume)$/);
   if (ctrlMatch && req.method === 'POST') {
     const ip = decodeURIComponent(ctrlMatch[1]);
-    const cmd = ctrlMatch[2]; // 'pause' or 'resume' - sent verbatim to the miner
-    try {
-      const result = await cgMinerQuery(ip, cmd);
-      const st = (result?.STATUS ?? [])[0] ?? {};
-      const ok = st.STATUS === 'S';
-      return send(res, ok ? 200 : 502, { ok, command: cmd, message: st.Msg ?? null });
-    } catch (err) {
-      return send(res, 502, { ok: false, command: cmd, error: err.message });
-    }
+    const action = ctrlMatch[2];
+    if (!HOST_RE.test(ip)) return send(res, 400, { ok: false, error: 'bad host' });
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
+    req.on('end', async () => {
+      let password = '';
+      try { password = JSON.parse(body || '{}').password || ''; } catch (e) {}
+      let token;
+      try {
+        token = await minerLogin(ip, password);
+      } catch (err) {
+        const denied = /denied|unauth|invalid|permission|password|credential/i.test(err.message);
+        return send(res, denied ? 401 : 502, { ok: false, needPassword: denied, error: err.message });
+      }
+      const method = action === 'pause'
+        ? 'braiins.bos.v1.ActionsService/PauseMining'
+        : 'braiins.bos.v1.ActionsService/ResumeMining';
+      try {
+        await grpcCall(ip, method, {}, token);
+        return send(res, 200, { ok: true, command: action });
+      } catch (err) {
+        return send(res, 502, { ok: false, error: err.message });
+      }
+    });
+    return;
   }
 
   if (url.pathname === '/api/scan') {
