@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Miner, MinerConfig } from "@/lib/types";
-import { fetchMinerStats, scanLAN } from "@/lib/minerApi";
+import { fetchMinerStats, scanLAN, setMinerPaused } from "@/lib/minerApi";
 
 const STORAGE_KEY = "hashboard.state.v2";
 
@@ -39,7 +39,7 @@ interface State {
   setPower: (id: string, watts: number) => void;
   updateConfig: (id: string, patch: Partial<MinerConfig>) => void;
   updateIp: (id: string, ip: string) => void;
-  togglePause: (id: string) => void;
+  togglePause: (id: string) => Promise<void>;
   removeMiner: (id: string) => void;
   scan: () => Promise<void>;
   /** Poll live data from the real miner API via the local proxy */
@@ -97,14 +97,22 @@ export const useMiners = create<State>()(
           miners: s.miners.map((m) => (m.id === id ? { ...m, ip } : m)),
         })),
 
-      togglePause: (id) =>
+      togglePause: async (id) => {
+        const { miners, liveMode } = get();
+        const m = miners.find((x) => x.id === id);
+        if (!m) return;
+        const currentlyPaused = liveMode ? m.live.th <= 0.5 : m.status === "paused";
+        // Optimistic local flip; the next poll reflects the miner's real state.
         set((s) => ({
-          miners: s.miners.map((m) =>
-            m.id === id
-              ? { ...m, status: m.status === "paused" ? "mining" : "paused" }
-              : m
+          miners: s.miners.map((x) =>
+            x.id === id
+              ? { ...x, status: currentlyPaused ? "mining" : "paused" }
+              : x
           ),
-        })),
+        }));
+        // Real command to the miner: pause -> 'pause', resume -> 'resume'.
+        await setMinerPaused(m.ip, !currentlyPaused);
+      },
 
       removeMiner: (id) =>
         set((s) => {

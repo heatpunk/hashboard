@@ -178,6 +178,20 @@ http.createServer(async (req, res) => {
     }
   }
 
+  const ctrlMatch = url.pathname.match(/^\/api\/miners\/([^/]+)\/(pause|resume)$/);
+  if (ctrlMatch && req.method === 'POST') {
+    const ip = decodeURIComponent(ctrlMatch[1]);
+    const cmd = ctrlMatch[2]; // 'pause' or 'resume' - sent verbatim to the miner
+    try {
+      const result = await cgMinerQuery(ip, cmd);
+      const st = (result?.STATUS ?? [])[0] ?? {};
+      const ok = st.STATUS === 'S';
+      return send(res, ok ? 200 : 502, { ok, command: cmd, message: st.Msg ?? null });
+    } catch (err) {
+      return send(res, 502, { ok: false, command: cmd, error: err.message });
+    }
+  }
+
   if (url.pathname === '/api/scan') {
     const subnet = url.searchParams.get('subnet') ?? '192.168.1';
     try {

@@ -40,6 +40,20 @@ export async function fetchMinerStats(ip: string): Promise<MinerSnapshot | null>
   }
 }
 
+export async function setMinerPaused(ip: string, paused: boolean): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/miners/${encodeURIComponent(ip)}/${paused ? 'pause' : 'resume'}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!data.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function proxyHealthy(): Promise<boolean> {
   try {
     const res = await fetch('/api/health', { signal: AbortSignal.timeout(1000) });
