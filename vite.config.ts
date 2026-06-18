@@ -13,6 +13,10 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    // Forward /api/* to the local CGMiner proxy (node server/proxy.cjs)
+    proxy: {
+      "/api": "http://127.0.0.1:8081",
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

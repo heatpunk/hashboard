@@ -1,17 +1,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Miner, MinerConfig } from "@/lib/types";
+import { fetchMinerStats, scanLAN } from "@/lib/minerApi";
 
 const STORAGE_KEY = "hashboard.state.v1";
 
 const seed = (): Miner[] => [
   {
     id: "m1",
-    ip: "192.168.1.42",
+    ip: "192.168.1.106",
     model: "Antminer S19 Pro",
     status: "mining",
     config: {
-      name: "Garage 01",
+      name: "Miner 01",
       powerMin: 500,
       powerMax: 1500,
       powerTarget: 1100,
@@ -21,22 +22,6 @@ const seed = (): Miner[] => [
     },
     live: { th: 96, watts: 1100, chipTemp: 62, fanSpeed: 55 },
   },
-  {
-    id: "m2",
-    ip: "192.168.1.43",
-    model: "Antminer S19j Pro",
-    status: "mining",
-    config: {
-      name: "Garage 02",
-      powerMin: 600,
-      powerMax: 1400,
-      powerTarget: 1300,
-      fanMode: "manual",
-      fanManual: 75,
-      fanAutoRange: [30, 70],
-    },
-    live: { th: 104, watts: 1300, chipTemp: 67, fanSpeed: 75 },
-  },
 ];
 
 interface State {
@@ -44,14 +29,21 @@ interface State {
   selectedId: string | null;
   theme: "light" | "dark";
   scanning: boolean;
+  /** true when at least one miner responded with real data on last poll */
+  liveMode: boolean;
+
   select: (id: string) => void;
   setTheme: (t: "light" | "dark") => void;
   toggleTheme: () => void;
   setPower: (id: string, watts: number) => void;
   updateConfig: (id: string, patch: Partial<MinerConfig>) => void;
+  updateIp: (id: string, ip: string) => void;
   togglePause: (id: string) => void;
+  removeMiner: (id: string) => void;
   scan: () => Promise<void>;
-  /** mock live ticker */
+  /** Poll live data from the real miner API via the local proxy */
+  pollLive: () => Promise<void>;
+  /** Smooth animation tick (1 s) — lerps toward current target/live values */
   _tick: () => void;
 }
 
@@ -62,6 +54,7 @@ export const useMiners = create<State>()(
       selectedId: "m1",
       theme: "dark",
       scanning: false,
+      liveMode: false,
 
       select: (id) => set({ selectedId: id }),
       setTheme: (t) => set({ theme: t }),
@@ -90,7 +83,6 @@ export const useMiners = create<State>()(
           miners: s.miners.map((m) => {
             if (m.id !== id) return m;
             const config = { ...m.config, ...patch };
-            // clamp target to bounds
             config.powerTarget = Math.min(
               config.powerMax,
               Math.max(config.powerMin, config.powerTarget)
@@ -99,23 +91,93 @@ export const useMiners = create<State>()(
           }),
         })),
 
+      updateIp: (id, ip) =>
+        set((s) => ({
+          miners: s.miners.map((m) => (m.id === id ? { ...m, ip } : m)),
+        })),
+
       togglePause: (id) =>
         set((s) => ({
           miners: s.miners.map((m) =>
             m.id === id
-              ? {
-                  ...m,
-                  status: m.status === "paused" ? "mining" : "paused",
-                }
+              ? { ...m, status: m.status === "paused" ? "mining" : "paused" }
               : m
           ),
         })),
 
+      removeMiner: (id) =>
+        set((s) => {
+          const miners = s.miners.filter((m) => m.id !== id);
+          const selectedId =
+            s.selectedId === id ? (miners[0]?.id ?? null) : s.selectedId;
+          return { miners, selectedId };
+        }),
+
+      pollLive: async () => {
+        const { miners } = get();
+        const fetched = await Promise.all(
+          miners.map(async (m) => {
+            const stats = await fetchMinerStats(m.ip);
+            return { id: m.id, stats };
+          })
+        );
+
+        const anyLive = fetched.some((f) => f.stats != null);
+
+        set((s) => ({
+          liveMode: anyLive,
+          miners: s.miners.map((m) => {
+            const entry = fetched.find((f) => f.id === m.id);
+            const stats = entry?.stats;
+            if (!stats) return m;
+            return {
+              ...m,
+              live: {
+                th: stats.th,
+                watts: stats.watts ?? m.live.watts,
+                chipTemp: stats.chipTemp ?? m.live.chipTemp,
+                fanSpeed: stats.fanSpeed ?? m.live.fanSpeed,
+              },
+            };
+          }),
+        }));
+      },
+
       scan: async () => {
         set({ scanning: true });
-        // Mocked LAN scan — in real build this iterates 192.168.x.1..254
-        await new Promise((r) => setTimeout(r, 1400));
-        set({ scanning: false });
+        const { miners } = get();
+        const existingIp = miners[0]?.ip ?? "192.168.1.1";
+        const subnet = existingIp.split(".").slice(0, 3).join(".");
+
+        const discovered = await scanLAN(subnet);
+
+        set((s) => {
+          const existingIps = new Set(s.miners.map((m) => m.ip));
+          const newMiners: Miner[] = discovered
+            .filter((d) => !existingIps.has(d.ip))
+            .map((d, i) => ({
+              id: `disc-${Date.now()}-${i}`,
+              ip: d.ip,
+              model: d.model,
+              status: "mining" as const,
+              config: {
+                name: d.ip,
+                powerMin: 500,
+                powerMax: 2000,
+                powerTarget: 1200,
+                fanMode: "auto" as const,
+                fanManual: 60,
+                fanAutoRange: [30, 70] as [number, number],
+              },
+              live: {
+                th: d.live.th,
+                watts: d.live.watts ?? 1200,
+                chipTemp: d.live.chipTemp ?? 60,
+                fanSpeed: d.live.fanSpeed ?? 60,
+              },
+            }));
+          return { scanning: false, miners: [...s.miners, ...newMiners] };
+        });
       },
 
       _tick: () => {
@@ -134,23 +196,19 @@ export const useMiners = create<State>()(
               };
             }
             const target = m.config.powerTarget;
-            // efficiency: TH scales roughly linearly with power around a curve
-            const targetTh = (target / 11.5) + jitter(1.2);
+            const targetTh = target / 11.5 + jitter(1.2);
             const targetTemp = 45 + (target - 500) * 0.022 + jitter(0.6);
             const targetFan =
               m.config.fanMode === "manual"
                 ? m.config.fanManual
-                : clampFan(
-                    m.config.fanAutoRange,
-                    30 + (targetTemp - 45) * 1.6
-                  );
+                : clampFan(m.config.fanAutoRange, 30 + (targetTemp - 45) * 1.6);
             return {
               ...m,
               live: {
-                watts: lerp(m.live.watts, target + jitter(6), 0.35),
-                th: lerp(m.live.th, targetTh, 0.25),
-                chipTemp: lerp(m.live.chipTemp, targetTemp, 0.12),
-                fanSpeed: lerp(m.live.fanSpeed, targetFan, 0.2),
+                watts: lerp(m.live.watts, target + jitter(6), 0.08),
+                th: lerp(m.live.th, targetTh, 0.08),
+                chipTemp: lerp(m.live.chipTemp, targetTemp, 0.04),
+                fanSpeed: lerp(m.live.fanSpeed, targetFan, 0.06),
               },
             };
           }),
