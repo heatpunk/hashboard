@@ -3,24 +3,24 @@ import { persist } from "zustand/middleware";
 import type { Miner, MinerConfig } from "@/lib/types";
 import { fetchMinerStats, scanLAN } from "@/lib/minerApi";
 
-const STORAGE_KEY = "hashboard.state.v1";
+const STORAGE_KEY = "hashboard.state.v2";
 
 const seed = (): Miner[] => [
   {
     id: "m1",
     ip: "192.168.1.106",
-    model: "Antminer S19 Pro",
+    model: "Antminer S19j Pro",
     status: "mining",
     config: {
       name: "Miner 01",
-      powerMin: 500,
-      powerMax: 1500,
-      powerTarget: 1100,
+      powerMin: 944,
+      powerMax: 1718,
+      powerTarget: 1718,
       fanMode: "auto",
       fanManual: 60,
       fanAutoRange: [30, 70],
     },
-    live: { th: 96, watts: 1100, chipTemp: 62, fanSpeed: 55 },
+    live: { th: 0, watts: 0, chipTemp: 35, fanSpeed: 0 },
   },
 ];
 
@@ -117,26 +117,38 @@ export const useMiners = create<State>()(
         const { miners } = get();
         const fetched = await Promise.all(
           miners.map(async (m) => {
-            const stats = await fetchMinerStats(m.ip);
-            return { id: m.id, stats };
+            const snap = await fetchMinerStats(m.ip);
+            return { id: m.id, snap };
           })
         );
 
-        const anyLive = fetched.some((f) => f.stats != null);
+        const anyLive = fetched.some((f) => f.snap != null);
 
         set((s) => ({
           liveMode: anyLive,
           miners: s.miners.map((m) => {
             const entry = fetched.find((f) => f.id === m.id);
-            const stats = entry?.stats;
-            if (!stats) return m;
+            const snap = entry?.snap;
+            if (!snap) return m;
+            const live = snap.live;
+            // Slider ceiling follows the miner's own configured target; the
+            // user can never push the target above what the machine is set to.
+            const powerMax =
+              snap.machineTarget != null && snap.machineTarget > 0
+                ? snap.machineTarget
+                : m.config.powerMax;
+            const powerTarget = Math.min(
+              powerMax,
+              Math.max(m.config.powerMin, m.config.powerTarget)
+            );
             return {
               ...m,
+              config: { ...m.config, powerMax, powerTarget },
               live: {
-                th: stats.th,
-                watts: stats.watts ?? m.live.watts,
-                chipTemp: stats.chipTemp ?? m.live.chipTemp,
-                fanSpeed: stats.fanSpeed ?? m.live.fanSpeed,
+                th: live.th,
+                watts: live.watts ?? m.live.watts,
+                chipTemp: live.chipTemp ?? m.live.chipTemp,
+                fanSpeed: live.fanSpeed ?? m.live.fanSpeed,
               },
             };
           }),

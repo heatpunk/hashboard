@@ -107,7 +107,7 @@ async function probeMiner(ip) {
       cgMinerQuery(ip, 'fans').catch(() => ({})),
       cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
     ]);
-    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner) };
+    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner), config: { powerTarget: (tuner?.TUNERSTATUS ?? [])[0]?.PowerLimit ?? null } };
   } catch {
     return null;
   }
@@ -153,6 +153,7 @@ http.createServer(async (req, res) => {
       return send(res, 200, {
         ok: true,
         live: normalizeLive(summary, stats, temps, fans, tuner),
+        config: { powerTarget: (tuner?.TUNERSTATUS ?? [])[0]?.PowerLimit ?? null },
         model: detectModel(stats),
       });
     } catch (err) {

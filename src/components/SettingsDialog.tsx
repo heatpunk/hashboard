@@ -125,13 +125,13 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Max</Label>
+                <Label className="text-[10px] text-muted-foreground">Max (maskin)</Label>
                 <Input
                   type="number"
                   value={pMax}
-                  onChange={(e) => setPMax(Number(e.target.value))}
-                  onBlur={() => updateConfig(miner.id, { powerMax: pMax })}
-                  className="font-readout"
+                  readOnly
+                  title="Hämtas från maskinens inställda target — kan inte höjas här"
+                  className="font-readout opacity-60 cursor-not-allowed"
                 />
               </div>
             </div>

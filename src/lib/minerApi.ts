@@ -11,14 +11,24 @@ export interface DiscoveredMiner {
   live: MinerStats;
 }
 
-export async function fetchMinerStats(ip: string): Promise<MinerStats | null> {
+export interface MinerSnapshot {
+  live: MinerStats;
+  /** the miner's own configured power target (watts), null if unknown */
+  machineTarget: number | null;
+}
+
+export async function fetchMinerStats(ip: string): Promise<MinerSnapshot | null> {
   try {
     const res = await fetch(`/api/miners/${encodeURIComponent(ip)}/stats`, {
       signal: AbortSignal.timeout(4500),
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return data.ok ? (data.live as MinerStats) : null;
+    if (!data.ok) return null;
+    return {
+      live: data.live as MinerStats,
+      machineTarget: (data.config?.powerTarget ?? null) as number | null,
+    };
   } catch {
     return null;
   }
