@@ -54,36 +54,40 @@ function cgMinerQuery(ip, command) {
   });
 }
 
-function normalizeLive(summary, stats) {
+function normalizeLive(summary, stats, temps, fans, tuner) {
   const s = (summary?.SUMMARY ?? [])[0] ?? {};
   const st = (stats?.STATS ?? []).find(x => x['GHS av'] != null || x['GHS 5s'] != null) ?? {};
 
-  const ghsAv = st['GHS av'] ?? 0;
-  const mhsAv = s['MHS av'] ?? s['MHS 5s'] ?? 0;
-  const th = ghsAv > 0
-    ? parseFloat((ghsAv / 1000).toFixed(2))
-    : parseFloat((mhsAv / 1e6).toFixed(2));
+  // Current hashrate (a paused miner reads 0), not the lifetime average.
+  let th;
+  if (st['GHS 5s'] != null) th = st['GHS 5s'] / 1000;
+  else if (st['GHS av'] != null) th = st['GHS av'] / 1000;
+  else if (s['MHS 5s'] != null) th = s['MHS 5s'] / 1e6;
+  else if (s['MHS 1m'] != null) th = s['MHS 1m'] / 1e6;
+  else th = (s['MHS av'] ?? 0) / 1e6;
+  th = parseFloat(th.toFixed(2));
 
-  const watts = s['Power'] ?? st['power'] ?? st['Power'] ?? null;
+  // Real power draw from Braiins tunerstatus (0 when paused); else a Power field.
+  const ts = (tuner?.TUNERSTATUS ?? [])[0] ?? {};
+  const watts = ts.ApproximateMinerPowerConsumption ?? s['Power'] ?? st['power'] ?? st['Power'] ?? null;
 
-  const boardTemps = [];
-  for (let i = 1; i <= 8; i++) {
-    const t = st[`temp${i}`];
-    if (t != null && t > 0) boardTemps.push(t);
+  // Hottest chip from Braiins `temps`; else legacy stats temp1..8.
+  let chips = (temps?.TEMPS ?? []).map(t => t.Chip).filter(v => v != null && v > 0);
+  if (chips.length === 0) {
+    for (let i = 1; i <= 8; i++) { const t = st[`temp${i}`]; if (t != null && t > 0) chips.push(t); }
   }
-  const chipTemp = boardTemps.length > 0
-    ? parseFloat((boardTemps.reduce((a, b) => a + b, 0) / boardTemps.length).toFixed(1))
-    : null;
+  const chipTemp = chips.length > 0 ? parseFloat(Math.max(...chips).toFixed(1)) : null;
 
-  const fanRpms = [];
-  for (let i = 1; i <= 8; i++) {
-    const rpm = st[`fan${i}`];
-    if (rpm != null && rpm > 0) fanRpms.push(rpm);
+  // Fan from Braiins `fans` (Speed %, 0 when paused); else legacy stats fan1..8 RPM.
+  let fanSpeed = null;
+  const fanSpeeds = (fans?.FANS ?? []).map(f => f.Speed).filter(v => v != null);
+  if (fanSpeeds.length > 0) {
+    fanSpeed = Math.round(Math.max(...fanSpeeds));
+  } else {
+    const fanRpms = [];
+    for (let i = 1; i <= 8; i++) { const rpm = st[`fan${i}`]; if (rpm != null && rpm > 0) fanRpms.push(rpm); }
+    if (fanRpms.length > 0) fanSpeed = Math.min(100, Math.round((Math.max(...fanRpms) / 6000) * 100));
   }
-  const avgRpm = fanRpms.length > 0
-    ? fanRpms.reduce((a, b) => a + b, 0) / fanRpms.length
-    : null;
-  const fanSpeed = avgRpm != null ? Math.min(100, Math.round((avgRpm / 6000) * 100)) : null;
 
   return { th, watts, chipTemp, fanSpeed };
 }
@@ -97,8 +101,13 @@ async function probeMiner(ip) {
   try {
     const summary = await cgMinerQuery(ip, 'summary');
     if (!summary?.SUMMARY?.[0]) return null;
-    const stats = await cgMinerQuery(ip, 'stats').catch(() => ({}));
-    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats) };
+    const [stats, temps, fans, tuner] = await Promise.all([
+      cgMinerQuery(ip, 'stats').catch(() => ({})),
+      cgMinerQuery(ip, 'temps').catch(() => ({})),
+      cgMinerQuery(ip, 'fans').catch(() => ({})),
+      cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
+    ]);
+    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner) };
   } catch {
     return null;
   }
@@ -134,13 +143,16 @@ http.createServer(async (req, res) => {
   if (statsMatch) {
     const ip = decodeURIComponent(statsMatch[1]);
     try {
-      const [summary, stats] = await Promise.all([
+      const [summary, stats, temps, fans, tuner] = await Promise.all([
         cgMinerQuery(ip, 'summary'),
         cgMinerQuery(ip, 'stats').catch(() => ({})),
+        cgMinerQuery(ip, 'temps').catch(() => ({})),
+        cgMinerQuery(ip, 'fans').catch(() => ({})),
+        cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
       ]);
       return send(res, 200, {
         ok: true,
-        live: normalizeLive(summary, stats),
+        live: normalizeLive(summary, stats, temps, fans, tuner),
         model: detectModel(stats),
       });
     } catch (err) {

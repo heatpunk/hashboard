@@ -181,6 +181,9 @@ export const useMiners = create<State>()(
       },
 
       _tick: () => {
+        // In live mode the real values come from pollLive — don't let the
+        // simulation overwrite them.
+        if (get().liveMode) return;
         set((s) => ({
           miners: s.miners.map((m) => {
             if (m.status !== "mining") {
