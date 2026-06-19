@@ -79,7 +79,7 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
                 if (ip.trim()) updateIp(miner.id, ip.trim());
               }}
               className="font-readout"
-              placeholder="192.168.1.106"
+              placeholder="192.168.x.x"
             />
           </div>
 

@@ -5,25 +5,7 @@ import { fetchMinerStats, scanLAN, setMinerPaused } from "@/lib/minerApi";
 
 const STORAGE_KEY = "hashboard.state.v2";
 
-const seed = (): Miner[] => [
-  {
-    id: "m1",
-    ip: "192.168.1.106",
-    model: "Antminer S19j Pro",
-    status: "mining",
-    boards: { active: 2, total: 3 },
-    config: {
-      name: "Miner 01",
-      powerMin: 944,
-      powerMax: 1718,
-      powerTarget: 1718,
-      fanMode: "auto",
-      fanManual: 60,
-      fanAutoRange: [30, 70],
-    },
-    live: { th: 0, watts: 0, chipTemp: 35, fanSpeed: 0 },
-  },
-];
+const seed = (): Miner[] => [];
 
 interface State {
   miners: Miner[];
@@ -58,7 +40,7 @@ export const useMiners = create<State>()(
   persist(
     (set, get) => ({
       miners: seed(),
-      selectedId: "m1",
+      selectedId: null,
       theme: "dark",
       scanning: false,
       liveMode: false,
