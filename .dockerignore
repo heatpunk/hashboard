@@ -1,0 +1,6 @@
+node_modules
+dist
+javascript
+.git
+*.s9pk
+pkg

@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# StartOS build artifacts
+*.s9pk
+sdk-build/javascript/
+sdk-build/node_modules/
