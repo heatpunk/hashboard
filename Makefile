@@ -15,7 +15,7 @@ sdk-build/node_modules: sdk-build/package.json
 # Pack the s9pk (requires SDK javascript built and GHCR image available)
 pack: sdk-build/javascript/index.js
 	start-cli s9pk pack \
-		--javascript sdk-build/javascript/index.js \
+		--javascript sdk-build/javascript \
 		--icon startos/icon.png \
 		--instructions startos/instructions.md \
 		--license LICENSE \
