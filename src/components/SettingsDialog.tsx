@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -38,8 +37,6 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
   }, [miner?.id, open]);
 
   if (!miner) return null;
-
-  const fanAuto = miner.config.fanMode === "auto";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,61 +119,6 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
                 />
               </div>
             </div>
-          </div>
-
-          <Separator />
-
-          {/* Fan */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-[10px] tracking-display text-muted-foreground">
-                Auto fan
-              </Label>
-              <Switch
-                checked={fanAuto}
-                onCheckedChange={(v) =>
-                  updateConfig(miner.id, { fanMode: v ? "auto" : "manual" })
-                }
-              />
-            </div>
-
-            {fanAuto ? (
-              <div className="space-y-2">
-                <div className="flex justify-between font-readout text-xs text-muted-foreground">
-                  <span>Range</span>
-                  <span>
-                    {miner.config.fanAutoRange[0]}–{miner.config.fanAutoRange[1]}%
-                  </span>
-                </div>
-                <Slider
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={miner.config.fanAutoRange}
-                  onValueChange={(v) =>
-                    updateConfig(miner.id, {
-                      fanAutoRange: [v[0], v[1]] as [number, number],
-                    })
-                  }
-                />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex justify-between font-readout text-xs text-muted-foreground">
-                  <span>Manual</span>
-                  <span>{miner.config.fanManual}%</span>
-                </div>
-                <Slider
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={[miner.config.fanManual]}
-                  onValueChange={(v) =>
-                    updateConfig(miner.id, { fanManual: v[0] })
-                  }
-                />
-              </div>
-            )}
           </div>
 
           <Separator />

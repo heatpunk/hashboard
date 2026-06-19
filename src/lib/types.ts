@@ -1,5 +1,4 @@
 export type MinerStatus = "mining" | "paused" | "offline";
-export type FanMode = "auto" | "manual";
 
 export interface MinerConfig {
   /** user-defined display name */
@@ -10,11 +9,6 @@ export interface MinerConfig {
   powerMax: number;
   /** target watts (within [powerMin, powerMax]) */
   powerTarget: number;
-  fanMode: FanMode;
-  /** manual fan speed 0..100 */
-  fanManual: number;
-  /** auto fan range [low, high] in 0..100 */
-  fanAutoRange: [number, number];
   /** BraiinsOS+ control-API password (username root); stored on device */
   apiPassword?: string;
 }

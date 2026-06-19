@@ -227,9 +227,6 @@ export const useMiners = create<State>()(
                 powerMin: 500,
                 powerMax: 2000,
                 powerTarget: 1200,
-                fanMode: "auto" as const,
-                fanManual: 60,
-                fanAutoRange: [30, 70] as [number, number],
               },
               live: {
                 th: d.live.th,
@@ -263,17 +260,13 @@ export const useMiners = create<State>()(
             const target = m.config.powerTarget;
             const targetTh = target / 11.5 + jitter(1.2);
             const targetTemp = 45 + (target - 500) * 0.022 + jitter(0.6);
-            const targetFan =
-              m.config.fanMode === "manual"
-                ? m.config.fanManual
-                : clampFan(m.config.fanAutoRange, 30 + (targetTemp - 45) * 1.6);
             return {
               ...m,
               live: {
                 watts: lerp(m.live.watts, target + jitter(6), 0.08),
                 th: lerp(m.live.th, targetTh, 0.08),
                 chipTemp: lerp(m.live.chipTemp, targetTemp, 0.04),
-                fanSpeed: lerp(m.live.fanSpeed, targetFan, 0.06),
+                fanSpeed: lerp(m.live.fanSpeed, 60, 0.06),
               },
             };
           }),
@@ -297,6 +290,4 @@ function lerp(a: number, b: number, t: number) {
 function jitter(amp: number) {
   return (Math.random() - 0.5) * 2 * amp;
 }
-function clampFan([lo, hi]: [number, number], v: number) {
-  return Math.min(hi, Math.max(lo, v));
-}
+
