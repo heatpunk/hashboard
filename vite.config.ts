@@ -1,10 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   // Relative paths so the build works on any host path (Start9 Pages, IPFS, etc.)
   base: "./",
   server: {
@@ -13,8 +12,12 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    // Forward /api/* to the local CGMiner proxy (node server/proxy.cjs)
+    proxy: {
+      "/api": "http://127.0.0.1:8081",
+    },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

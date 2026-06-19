@@ -4,6 +4,7 @@ import { PowerSlider } from "@/components/PowerSlider";
 import { Readout } from "@/components/Readout";
 import { MinerSwitcher } from "@/components/MinerSwitcher";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { PasswordDialog } from "@/components/PasswordDialog";
 import { Settings, Pause, Play } from "lucide-react";
 
 const Index = () => {
@@ -12,24 +13,32 @@ const Index = () => {
   const setPower = useMiners((s) => s.setPower);
   const togglePause = useMiners((s) => s.togglePause);
   const tick = useMiners((s) => s._tick);
+  const pollLive = useMiners((s) => s.pollLive);
+  const liveMode = useMiners((s) => s.liveMode);
+  const intents = useMiners((s) => s.intents);
   const theme = useMiners((s) => s.theme);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const miner =
-    miners.find((m) => m.id === selectedId) ?? miners[0];
+  const miner = miners.find((m) => m.id === selectedId) ?? miners[0];
 
-  // Apply theme class
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
-  // Live ticker — simulates real BraiinsOS+ polling
+  // Animation tick — smooth lerp every 1 s
   useEffect(() => {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [tick]);
+
+  // Real API poll every 5 s via local proxy
+  useEffect(() => {
+    pollLive();
+    const id = setInterval(pollLive, 5000);
+    return () => clearInterval(id);
+  }, [pollLive]);
 
   if (!miner) return null;
 
@@ -37,11 +46,12 @@ const Index = () => {
     miner.live.th > 0.5
       ? (miner.live.watts / miner.live.th).toFixed(1)
       : "—";
-  const paused = miner.status === "paused";
+  const intent = intents[miner.id];
+  const paused = intent ? intent.paused : liveMode ? miner.live.th <= 0.5 : miner.status === "paused";
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Live readouts — högst upp, diskret enradig */}
+      {/* Live readouts */}
       <header className="px-4 sm:px-8 pt-2 pb-0 shrink-0">
         <div className="flex items-center justify-center flex-wrap gap-x-5 gap-y-0 max-w-3xl mx-auto opacity-70">
           <Readout label="W" value={Math.round(miner.live.watts).toString()} />
@@ -51,10 +61,9 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Slider area — vertikalt centrerad mellan header och footer */}
+      {/* Slider area */}
       <section className="flex-1 flex items-center justify-center px-4 sm:px-8 py-4 min-h-0">
         <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto h-[50vh]">
-          {/* scale (vänster) */}
           <div className="w-14 sm:w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
             <span>{miner.config.powerMax}</span>
             <span>
@@ -62,8 +71,6 @@ const Index = () => {
             </span>
             <span>{miner.config.powerMin}</span>
           </div>
-
-          {/* slider (mitten) */}
           <div className="flex-1 flex items-center justify-center">
             <div className="w-32 sm:w-40 h-full max-h-none">
               <PowerSlider
@@ -75,8 +82,6 @@ const Index = () => {
               />
             </div>
           </div>
-
-          {/* target (höger) — samma bredd som scale för balans */}
           <div className="w-14 sm:w-16 flex flex-col items-end justify-center">
             <span className="text-[9px] tracking-display text-muted-foreground/70">
               Target
@@ -93,20 +98,17 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="shrink-0 px-4 sm:px-8 pb-4 pt-3 flex flex-col items-center gap-3">
-        {/* Wordmark — top of footer */}
         <h1
           className="text-sm font-light uppercase text-muted-foreground/80"
           style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
         >
           Hashboard
         </h1>
-
-        {/* Controls row */}
         <div className="w-full grid grid-cols-3 items-center">
           <button
-            onClick={() => togglePause(miner.id)}
+            onClick={() => { try { navigator.vibrate?.(15); } catch (e) {} togglePause(miner.id); }}
             aria-label={paused ? "Resume mining" : "Pause mining"}
-            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full border border-border backdrop-blur flex items-center justify-center hover:bg-secondary transition-colors"
+            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full border border-border backdrop-blur flex items-center justify-center hover:bg-secondary transition-all active:scale-90"
             style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
           >
             {paused ? (
@@ -115,11 +117,9 @@ const Index = () => {
               <Pause className="h-4 w-4" />
             )}
           </button>
-
           <div className="pointer-events-auto justify-self-center">
             <MinerSwitcher />
           </div>
-
           <button
             onClick={() => setSettingsOpen(true)}
             aria-label="Settings"
@@ -131,12 +131,12 @@ const Index = () => {
         </div>
       </footer>
 
-
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         minerId={miner.id}
       />
+      <PasswordDialog />
     </div>
   );
 };

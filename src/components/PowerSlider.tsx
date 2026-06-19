@@ -8,8 +8,8 @@ interface Props {
   disabled?: boolean;
 }
 
-/** Vertical, steglös power slider. Gradient-bakgrunden visas alltid;
- *  reglaget är en tunn, exklusiv linje som glider med pekaren. */
+/** Vertical, stepless power slider. The gradient background is always shown;
+ *  the handle is a thin, exclusive line that glides with the pointer. */
 export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -23,7 +23,7 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
       const rect = el.getBoundingClientRect();
       const ratio = 1 - (clientY - rect.top) / rect.height;
       const clamped = Math.min(1, Math.max(0, ratio));
-      // steglöst — ingen avrundning här
+      // stepless — no rounding here
       onChange(min + clamped * (max - min));
     },
     [min, max, onChange]
@@ -72,10 +72,10 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
           if (e.key === "ArrowDown") onChange(Math.max(min, value - step));
         }}
       >
-        {/* Full gradient — alltid synlig, mjukt nedtonad */}
+        {/* Full gradient — always visible, softly dimmed */}
         <div className="absolute inset-0 power-gradient opacity-25" />
 
-        {/* Aktiv del — gradient med full styrka upp till värdet */}
+        {/* Active part — gradient at full strength up to the value */}
         <div
           className="absolute inset-x-0 bottom-0 power-gradient"
           style={{
@@ -95,7 +95,7 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
           ))}
         </div>
 
-        {/* Tunn, exklusiv reglage-linje */}
+        {/* Thin, exclusive handle line */}
         <div
           className="absolute left-0 right-0 pointer-events-none"
           style={{

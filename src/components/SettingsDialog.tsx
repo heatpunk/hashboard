@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   open: boolean;
@@ -22,18 +23,18 @@ interface Props {
 export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
   const miner = useMiners((s) => s.miners.find((m) => m.id === minerId));
   const updateConfig = useMiners((s) => s.updateConfig);
+  const updateIp = useMiners((s) => s.updateIp);
+  const removeMiner = useMiners((s) => s.removeMiner);
   const theme = useMiners((s) => s.theme);
   const toggleTheme = useMiners((s) => s.toggleTheme);
 
   const [name, setName] = useState("");
-  const [pMin, setPMin] = useState(500);
-  const [pMax, setPMax] = useState(1500);
+  const [ip, setIp] = useState("");
 
   useEffect(() => {
     if (!miner) return;
     setName(miner.config.name);
-    setPMin(miner.config.powerMin);
-    setPMax(miner.config.powerMax);
+    setIp(miner.ip);
   }, [miner?.id, open]);
 
   if (!miner) return null;
@@ -42,13 +43,13 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="tracking-display text-xs font-medium">
             Settings
           </DialogTitle>
           <DialogDescription className="text-xs">
-            {miner.model} · {miner.ip}
+            {miner.model}
           </DialogDescription>
         </DialogHeader>
 
@@ -66,6 +67,22 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
             />
           </div>
 
+          {/* IP address */}
+          <div className="space-y-2">
+            <Label className="text-[10px] tracking-display text-muted-foreground">
+              IP address
+            </Label>
+            <Input
+              value={ip}
+              onChange={(e) => setIp(e.target.value)}
+              onBlur={() => {
+                if (ip.trim()) updateIp(miner.id, ip.trim());
+              }}
+              className="font-readout"
+              placeholder="192.168.1.106"
+            />
+          </div>
+
           <Separator />
 
           {/* Power range */}
@@ -75,32 +92,33 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
                 Power range
               </Label>
               <span className="font-readout text-xs text-muted-foreground">
-                {pMin}–{pMax} W
+                {miner.config.powerMin}–{miner.config.powerMax} W
               </span>
             </div>
+            <p className="text-[10px] text-muted-foreground/70 leading-snug">
+              {miner.boards
+                ? `${miner.boards.active} / ${miner.boards.total} hashboards active — limits scale to this`
+                : "Scaled to active hashboards"}
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">Min</Label>
                 <Input
                   type="number"
-                  value={pMin}
-                  onChange={(e) => setPMin(Number(e.target.value))}
-                  onBlur={() =>
-                    updateConfig(miner.id, { powerMin: pMin })
-                  }
-                  className="font-readout"
+                  value={miner.config.powerMin}
+                  readOnly
+                  title="Scaled to active hashboards — not editable here"
+                  className="font-readout opacity-60 cursor-not-allowed"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Max</Label>
+                <Label className="text-[10px] text-muted-foreground">Max (machine)</Label>
                 <Input
                   type="number"
-                  value={pMax}
-                  onChange={(e) => setPMax(Number(e.target.value))}
-                  onBlur={() =>
-                    updateConfig(miner.id, { powerMax: pMax })
-                  }
-                  className="font-readout"
+                  value={miner.config.powerMax}
+                  readOnly
+                  title="From the miner's configured target — can't be raised here"
+                  className="font-readout opacity-60 cursor-not-allowed"
                 />
               </div>
             </div>
@@ -127,8 +145,7 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
                 <div className="flex justify-between font-readout text-xs text-muted-foreground">
                   <span>Range</span>
                   <span>
-                    {miner.config.fanAutoRange[0]}–
-                    {miner.config.fanAutoRange[1]}%
+                    {miner.config.fanAutoRange[0]}–{miner.config.fanAutoRange[1]}%
                   </span>
                 </div>
                 <Slider
@@ -174,6 +191,21 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
               onCheckedChange={() => toggleTheme()}
             />
           </div>
+
+          <Separator />
+
+          {/* Remove miner */}
+          <Button
+            variant="destructive"
+            size="sm"
+            className="w-full text-xs"
+            onClick={() => {
+              removeMiner(miner.id);
+              onOpenChange(false);
+            }}
+          >
+            Remove this miner
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

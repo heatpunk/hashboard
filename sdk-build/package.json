@@ -1,0 +1,16 @@
+{
+  "name": "hashboard-startos-sdk-build",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ./javascript && ncc build index.ts -o ./javascript",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@start9labs/start-sdk": "1.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@vercel/ncc": "^0.38.4",
+    "typescript": "^5.9.3"
+  }
+}
