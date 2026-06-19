@@ -96,20 +96,14 @@ function normalizeLive(summary, stats, temps, fans, tuner) {
   return { th, watts, chipTemp, fanSpeed };
 }
 
-const TOTAL_BOARDS = 3;        // S19j Pro hashboard slots
-const MIN_POWER_FULL_W = 944;  // Braiins min power target for a full S19j Pro (not exposed via the socket API)
-
-// Scale the machine's full (all-boards) power target + Braiins floor down to
-// the boards that are actually active (active / total).
 function buildConfig(tuner, temps) {
   const fullTarget = (tuner?.TUNERSTATUS ?? [])[0]?.PowerLimit ?? null;
-  const active = (temps?.TEMPS ?? []).length || TOTAL_BOARDS;
-  const factor = TOTAL_BOARDS > 0 ? active / TOTAL_BOARDS : 1;
+  const active = (temps?.TEMPS ?? []).length;
   return {
-    powerTarget: fullTarget != null ? Math.round(fullTarget * factor) : null,
-    powerMin: Math.round(MIN_POWER_FULL_W * factor),
+    powerTarget: fullTarget != null ? Math.round(fullTarget) : null,
+    powerMin: null,
     fullTarget,
-    boards: { active, total: TOTAL_BOARDS },
+    boards: active > 0 ? { active, total: active } : null,
   };
 }
 

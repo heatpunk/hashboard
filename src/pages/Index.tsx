@@ -40,7 +40,24 @@ const Index = () => {
     return () => clearInterval(id);
   }, [pollLive]);
 
-  if (!miner) return null;
+  if (!miner) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center gap-6 px-8">
+        <h1
+          className="text-sm font-light uppercase text-muted-foreground/80"
+          style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
+        >
+          Hashboard
+        </h1>
+        <p className="text-xs text-muted-foreground text-center leading-relaxed">
+          No miners configured. Open the menu below and tap <strong>Scan LAN</strong> to find miners on your network, or add one manually in Settings.
+        </p>
+        <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 flex justify-center">
+          <MinerSwitcher />
+        </div>
+      </div>
+    );
+  }
 
   const wth =
     miner.live.th > 0.5
