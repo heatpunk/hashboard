@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Radar, Loader2, Circle } from "lucide-react";
+import { Radar, Loader2, Circle } from "lucide-react";
 
 export function MinerSwitcher() {
   const miners = useMiners((s) => s.miners);
@@ -50,7 +50,6 @@ export function MinerSwitcher() {
         <span className="text-[11px] tracking-display uppercase">
           {current?.config.name ?? "—"}
         </span>
-        <ChevronDown className="h-3.5 w-3.5 ml-1 opacity-70" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
         <DropdownMenuLabel className="text-[10px] tracking-display text-muted-foreground">
