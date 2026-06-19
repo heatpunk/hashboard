@@ -34,6 +34,8 @@ interface State {
   liveMode: boolean;
   /** miner id awaiting a control-API password, with the desired paused state */
   pwPrompt: { minerId: string; paused: boolean } | null;
+  /** optimistic pause/resume per miner for instant button feedback */
+  intents: Record<string, { paused: boolean; until: number }>;
 
   select: (id: string) => void;
   setTheme: (t: "light" | "dark") => void;
@@ -61,6 +63,7 @@ export const useMiners = create<State>()(
       scanning: false,
       liveMode: false,
       pwPrompt: null,
+      intents: {},
 
       select: (id) => set({ selectedId: id }),
       setTheme: (t) => set({ theme: t }),
@@ -103,22 +106,23 @@ export const useMiners = create<State>()(
         })),
 
       togglePause: async (id) => {
-        const { miners, liveMode } = get();
+        const { miners, liveMode, intents } = get();
         const m = miners.find((x) => x.id === id);
         if (!m) return;
-        const currentlyPaused = liveMode ? m.live.th <= 0.5 : m.status === "paused";
+        const currentlyPaused = intents[id]?.paused ?? (liveMode ? m.live.th <= 0.5 : m.status === "paused");
         const desiredPaused = !currentlyPaused;
+        // optimistic: flip the icon instantly, hold ~20s until polls confirm
+        set((s) => ({
+          intents: { ...s.intents, [id]: { paused: desiredPaused, until: Date.now() + 20000 } },
+          miners: s.miners.map((x) =>
+            x.id === id ? { ...x, status: desiredPaused ? "paused" : "mining" } : x
+          ),
+        }));
         const res = await setMinerPaused(m.ip, desiredPaused, m.config.apiPassword);
         if (res.needPassword) {
-          set({ pwPrompt: { minerId: id, paused: desiredPaused } });
-          return;
-        }
-        if (res.ok) {
-          set((s) => ({
-            miners: s.miners.map((x) =>
-              x.id === id ? { ...x, status: desiredPaused ? "paused" : "mining" } : x
-            ),
-          }));
+          set((s) => { const i = { ...s.intents }; delete i[id]; return { intents: i, pwPrompt: { minerId: id, paused: desiredPaused } }; });
+        } else if (!res.ok) {
+          set((s) => { const i = { ...s.intents }; delete i[id]; return { intents: i }; });
         }
       },
 
@@ -128,6 +132,7 @@ export const useMiners = create<State>()(
         const { minerId, paused } = prompt;
         set((s) => ({
           pwPrompt: null,
+          intents: { ...s.intents, [minerId]: { paused, until: Date.now() + 20000 } },
           miners: s.miners.map((x) =>
             x.id === minerId ? { ...x, config: { ...x.config, apiPassword: pw } } : x
           ),
@@ -202,6 +207,20 @@ export const useMiners = create<State>()(
             };
           }),
         }));
+
+        const now = Date.now();
+        set((s) => {
+          let changed = false;
+          const intents = { ...s.intents };
+          for (const mm of s.miners) {
+            const it = intents[mm.id];
+            if (it && (now > it.until || ((mm.live.th ?? 0) <= 0.5) === it.paused)) {
+              delete intents[mm.id];
+              changed = true;
+            }
+          }
+          return changed ? { intents } : {};
+        });
       },
 
       scan: async () => {

@@ -15,6 +15,7 @@ const Index = () => {
   const tick = useMiners((s) => s._tick);
   const pollLive = useMiners((s) => s.pollLive);
   const liveMode = useMiners((s) => s.liveMode);
+  const intents = useMiners((s) => s.intents);
   const theme = useMiners((s) => s.theme);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -45,7 +46,8 @@ const Index = () => {
     miner.live.th > 0.5
       ? (miner.live.watts / miner.live.th).toFixed(1)
       : "—";
-  const paused = liveMode ? miner.live.th <= 0.5 : miner.status === "paused";
+  const intent = intents[miner.id];
+  const paused = intent ? intent.paused : liveMode ? miner.live.th <= 0.5 : miner.status === "paused";
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -104,9 +106,9 @@ const Index = () => {
         </h1>
         <div className="w-full grid grid-cols-3 items-center">
           <button
-            onClick={() => togglePause(miner.id)}
+            onClick={() => { try { navigator.vibrate?.(15); } catch (e) {} togglePause(miner.id); }}
             aria-label={paused ? "Resume mining" : "Pause mining"}
-            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full border border-border backdrop-blur flex items-center justify-center hover:bg-secondary transition-colors"
+            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full border border-border backdrop-blur flex items-center justify-center hover:bg-secondary transition-all active:scale-90"
             style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
           >
             {paused ? (
