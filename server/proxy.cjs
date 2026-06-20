@@ -96,13 +96,25 @@ function normalizeLive(summary, stats, temps, fans, tuner) {
   return { th, watts, chipTemp, fanSpeed };
 }
 
-function buildConfig(tuner, temps, stats) {
-  const fullTarget = (tuner?.TUNERSTATUS ?? [])[0]?.PowerLimit ?? null;
+function buildConfig(tuner, temps, stats, summary) {
+  const ts = (tuner?.TUNERSTATUS ?? [])[0] ?? {};
+  const s = (summary?.SUMMARY ?? [])[0] ?? {};
+
+  // Try all known field names across CGMiner, Braiins BOS, and stock Antminer firmware
+  const rawLimit =
+    ts.PowerLimit ?? ts.power_limit ??
+    s.PowerLimit ?? s['Power_Limit'] ?? s.power_limit ??
+    null;
+  const fullTarget = rawLimit != null && Number(rawLimit) > 0 ? Number(rawLimit) : null;
+
   const active = (temps?.TEMPS ?? []).length;
-  // chain_num = total physical hashboards (including inactive) reported by CGMiner
-  const statsEntry = (stats?.STATS ?? []).find(x => x.chain_num != null);
-  const total = statsEntry?.chain_num ?? active;
-  const ratio = (active > 0 && total > 0) ? active / total : 1;
+  // chain_num = total physical boards reported by CGMiner (including inactive)
+  const statsEntry = (stats?.STATS ?? []).find(
+    x => x.chain_num != null || x['chain-num'] != null
+  );
+  const total = statsEntry?.chain_num ?? statsEntry?.['chain-num'] ?? active;
+  const ratio = active > 0 && total > 0 ? active / total : 1;
+
   return {
     powerTarget: fullTarget != null ? Math.round(fullTarget * ratio) : null,
     powerMin: null,
@@ -126,7 +138,7 @@ async function probeMiner(ip) {
       cgMinerQuery(ip, 'fans').catch(() => ({})),
       cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
     ]);
-    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner), config: buildConfig(tuner, temps, stats) };
+    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner), config: buildConfig(tuner, temps, stats, summary) };
   } catch {
     return null;
   }
@@ -190,7 +202,7 @@ http.createServer(async (req, res) => {
       return send(res, 200, {
         ok: true,
         live: normalizeLive(summary, stats, temps, fans, tuner),
-        config: buildConfig(tuner, temps, stats),
+        config: buildConfig(tuner, temps, stats, summary),
         model: detectModel(stats),
       });
     } catch (err) {
