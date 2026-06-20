@@ -14,8 +14,11 @@ interface State {
   scanning: boolean;
   /** true when at least one miner responded with real data on last poll */
   liveMode: boolean;
-  /** miner id awaiting a control-API password, with the desired paused state */
-  pwPrompt: { minerId: string; paused: boolean } | null;
+  /** miner awaiting an API password — for control (pause/resume) or just to
+   *  read the power target. `paused` only applies to control prompts. */
+  pwPrompt: { minerId: string; reason: "control" | "read"; paused?: boolean } | null;
+  /** miners whose password prompt the user dismissed this session — don't nag */
+  pwDismissed: Record<string, boolean>;
   /** optimistic pause/resume per miner for instant button feedback */
   intents: Record<string, { paused: boolean; until: number }>;
 
@@ -45,6 +48,7 @@ export const useMiners = create<State>()(
       scanning: false,
       liveMode: false,
       pwPrompt: null,
+      pwDismissed: {},
       intents: {},
 
       select: (id) => set({ selectedId: id }),
@@ -102,7 +106,7 @@ export const useMiners = create<State>()(
         }));
         const res = await setMinerPaused(m.ip, desiredPaused, m.config.apiPassword);
         if (res.needPassword) {
-          set((s) => { const i = { ...s.intents }; delete i[id]; return { intents: i, pwPrompt: { minerId: id, paused: desiredPaused } }; });
+          set((s) => { const i = { ...s.intents }; delete i[id]; return { intents: i, pwPrompt: { minerId: id, reason: "control", paused: desiredPaused } }; });
         } else if (!res.ok) {
           set((s) => { const i = { ...s.intents }; delete i[id]; return { intents: i }; });
         }
@@ -111,17 +115,36 @@ export const useMiners = create<State>()(
       submitMinerPassword: async (pw) => {
         const prompt = get().pwPrompt;
         if (!prompt) return;
-        const { minerId, paused } = prompt;
+        const { minerId, reason, paused } = prompt;
+        // Store the password and clear any prior dismissal for this miner.
+        set((s) => {
+          const dismissed = { ...s.pwDismissed };
+          delete dismissed[minerId];
+          return {
+            pwPrompt: null,
+            pwDismissed: dismissed,
+            miners: s.miners.map((x) =>
+              x.id === minerId ? { ...x, config: { ...x.config, apiPassword: pw } } : x
+            ),
+          };
+        });
+
+        // "read": password only needed to read the power target — refresh now.
+        if (reason === "read") {
+          await get().pollLive();
+          return;
+        }
+
+        // "control": also apply the intended pause/resume.
         set((s) => ({
-          pwPrompt: null,
-          intents: { ...s.intents, [minerId]: { paused, until: Date.now() + 20000 } },
+          intents: { ...s.intents, [minerId]: { paused: !!paused, until: Date.now() + 20000 } },
           miners: s.miners.map((x) =>
-            x.id === minerId ? { ...x, config: { ...x.config, apiPassword: pw } } : x
+            x.id === minerId ? { ...x, status: paused ? "paused" : "mining" } : x
           ),
         }));
         const m = get().miners.find((x) => x.id === minerId);
         if (m) {
-          const res = await setMinerPaused(m.ip, paused, pw);
+          const res = await setMinerPaused(m.ip, !!paused, pw);
           if (res.ok) {
             set((s) => ({
               miners: s.miners.map((x) =>
@@ -129,12 +152,17 @@ export const useMiners = create<State>()(
               ),
             }));
           } else if (res.needPassword) {
-            set({ pwPrompt: { minerId, paused } });
+            set({ pwPrompt: { minerId, reason: "control", paused } });
           }
         }
       },
 
-      dismissPwPrompt: () => set({ pwPrompt: null }),
+      dismissPwPrompt: () =>
+        set((s) =>
+          s.pwPrompt
+            ? { pwPrompt: null, pwDismissed: { ...s.pwDismissed, [s.pwPrompt.minerId]: true } }
+            : { pwPrompt: null }
+        ),
 
       removeMiner: (id) =>
         set((s) => {
@@ -148,7 +176,7 @@ export const useMiners = create<State>()(
         const { miners } = get();
         const fetched = await Promise.all(
           miners.map(async (m) => {
-            const snap = await fetchMinerStats(m.ip);
+            const snap = await fetchMinerStats(m.ip, m.config.apiPassword);
             return { id: m.id, snap };
           })
         );
@@ -189,6 +217,19 @@ export const useMiners = create<State>()(
             };
           }),
         }));
+
+        // If the visible miner is reachable but needs a password to read its
+        // power target, raise the same dialog used for control — once, unless
+        // the user dismissed it. (Wrong stored passwords re-prompt; dismissal
+        // stops the nag.)
+        const cur = get();
+        const selId = cur.selectedId ?? cur.miners[0]?.id ?? null;
+        if (selId && !cur.pwPrompt && !cur.pwDismissed[selId]) {
+          const entry = fetched.find((f) => f.id === selId);
+          if (entry?.snap?.needPassword) {
+            set({ pwPrompt: { minerId: selId, reason: "read" } });
+          }
+        }
 
         const now = Date.now();
         set((s) => {
