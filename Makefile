@@ -1,5 +1,5 @@
 PKG = hashboard.s9pk
-IMAGE = ghcr.io/heatpunk/hashboard:0.1.2
+IMAGE = ghcr.io/heatpunk/hashboard:0.1.3
 
 .PHONY: all pack inspect clean sdk-deps
 
