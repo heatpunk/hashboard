@@ -174,7 +174,7 @@ export const useMiners = create<State>()(
                 : m.config.powerMin;
             const powerTarget = Math.min(
               powerMax,
-              Math.max(powerMin, m.config.powerTarget)
+              Math.max(powerMin, snap.machineTarget ?? m.config.powerTarget)
             );
             return {
               ...m,
