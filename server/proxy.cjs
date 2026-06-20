@@ -96,32 +96,10 @@ function normalizeLive(summary, stats, temps, fans, tuner) {
   return { th, watts, chipTemp, fanSpeed };
 }
 
-function buildConfig(tuner, temps, stats, summary) {
-  const ts = (tuner?.TUNERSTATUS ?? [])[0] ?? {};
-  const s = (summary?.SUMMARY ?? [])[0] ?? {};
-
-  // Try all known field names across CGMiner, Braiins BOS, and stock Antminer firmware.
-  // Braiins BOS may use 'Power Limit' (spaced) or 'PowerTarget'; stock Antminer uses 'Power_Limit'.
-  const rawLimit =
-    ts.PowerLimit ?? ts['Power Limit'] ?? ts.PowerTarget ?? ts.power_limit ??
-    s.PowerLimit ?? s['Power Limit'] ?? s['Power_Limit'] ?? s.power_limit ??
-    null;
-  const fullTarget = rawLimit != null && Number(rawLimit) > 0 ? Number(rawLimit) : null;
-
-  const active = (temps?.TEMPS ?? []).length;
-  // chain_num = total physical boards reported by CGMiner (including inactive)
-  const statsEntry = (stats?.STATS ?? []).find(
-    x => x.chain_num != null || x['chain-num'] != null
-  );
-  const total = statsEntry?.chain_num ?? statsEntry?.['chain-num'] ?? active;
-  const ratio = active > 0 && total > 0 ? active / total : 1;
-
-  return {
-    powerTarget: fullTarget != null ? Math.round(fullTarget * ratio) : null,
-    powerMin: null,
-    fullTarget,
-    boards: active > 0 ? { active, total } : null,
-  };
+function buildConfig() {
+  // CGMiner doesn't expose the Braiins power limit or active board count reliably.
+  // These are filled from gRPC (fetchBosTarget/fetchBosBoards) in the stats endpoint.
+  return { powerTarget: null, powerMin: null, fullTarget: null, boards: null };
 }
 
 function detectModel(stats) {
@@ -139,7 +117,7 @@ async function probeMiner(ip) {
       cgMinerQuery(ip, 'fans').catch(() => ({})),
       cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
     ]);
-    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner), config: buildConfig(tuner, temps, stats, summary) };
+    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner), config: buildConfig() };
   } catch {
     return null;
   }
@@ -238,13 +216,14 @@ http.createServer(async (req, res) => {
         cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
       ]);
 
-      const config = buildConfig(tuner, temps, stats, summary);
+      const config = buildConfig();
+      // CGMiner temps entries correspond to physical hashboards (including inactive ones).
+      // Used as the reliable total board count when gRPC only returns enabled boards.
+      const tempsTotal = (temps?.TEMPS ?? []).length;
 
-      // The configured power target is only readable via the authenticated
-      // Braiins gRPC API — the open CGMiner API never exposes it. We fetch the
-      // real target + board counts and scale the displayed target by
-      // active/total boards. If the miner needs a password we couldn't supply,
-      // signal needPassword so the app can prompt for it (same as control).
+      // The configured power target lives only in the authenticated Braiins gRPC API.
+      // We fetch target + enabled board count, combine with CGMiner temps total to get
+      // the correct active/total ratio, and scale the target accordingly.
       const password = req.headers['x-miner-password'] || '';
       let needPassword = false;
       if (HOST_RE.test(ip)) {
@@ -254,11 +233,18 @@ http.createServer(async (req, res) => {
         } else {
           try {
             const token = await getToken(ip, password);
-            const [fullTarget, boards] = await Promise.all([
+            const [fullTarget, grpcBoards] = await Promise.all([
               fetchBosTarget(ip, token).catch(() => null),
               fetchBosBoards(ip, token).catch(() => null),
             ]);
-            if (boards) config.boards = boards;
+            if (grpcBoards != null) {
+              // grpcBoards.active = enabled boards from gRPC
+              // tempsTotal = physical board count from CGMiner (more reliable as total)
+              config.boards = {
+                active: grpcBoards.active,
+                total: tempsTotal > 0 ? tempsTotal : grpcBoards.total,
+              };
+            }
             if (fullTarget != null && fullTarget > 0) {
               const b = config.boards;
               const ratio = b && b.active > 0 && b.total > 0 ? b.active / b.total : 1;
@@ -271,7 +257,6 @@ http.createServer(async (req, res) => {
               needPassword = true;
               if (!password) authNeeded.set(ip, Date.now() + 30000);
             }
-            // otherwise fall back to cgminer-derived config
           }
         }
       }
