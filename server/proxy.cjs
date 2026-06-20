@@ -174,6 +174,37 @@ async function minerLogin(ip, password) {
   return r.token;
 }
 
+// Cache auth tokens briefly so polling doesn't log in on every request.
+const tokenCache = new Map(); // ip -> { token, expires }
+async function getToken(ip, password) {
+  const cached = tokenCache.get(ip);
+  if (cached && cached.expires > Date.now()) return cached.token;
+  const token = await minerLogin(ip, password);
+  tokenCache.set(ip, { token, expires: Date.now() + 60000 });
+  return token;
+}
+
+// The configured power target lives ONLY in the Braiins OS gRPC API
+// (PerformanceService/GetTunerState) — it is NOT exposed by the open CGMiner
+// TCP API. grpcurl emits proto fields in lowerCamelCase; Power.watt (uint64)
+// arrives as a string. Power-target mode → powerTargetModeState.currentTarget.
+async function fetchBosTarget(ip, token) {
+  const r = await grpcCall(ip, 'braiins.bos.v1.PerformanceService/GetTunerState', {}, token);
+  const w = r?.powerTargetModeState?.currentTarget?.watt
+    ?? r?.powerTargetModeState?.profile?.target?.watt;
+  return w != null ? Number(w) : null;
+}
+
+// Real total vs active hashboards from gRPC (each board carries an `enabled` flag).
+async function fetchBosBoards(ip, token) {
+  const r = await grpcCall(ip, 'braiins.bos.v1.MinerService/GetHashboards', {}, token);
+  const boards = r?.hashboards;
+  if (!Array.isArray(boards) || boards.length === 0) return null;
+  const total = boards.length;
+  const active = boards.filter(b => b.enabled).length || total;
+  return { active, total };
+}
+
 function send(res, status, body) {
   res.writeHead(status, {
     'Content-Type': 'application/json',
@@ -200,10 +231,34 @@ http.createServer(async (req, res) => {
         cgMinerQuery(ip, 'fans').catch(() => ({})),
         cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
       ]);
+
+      const config = buildConfig(tuner, temps, stats, summary);
+
+      // The configured power target is only readable via the authenticated
+      // Braiins gRPC API. With a password we fetch the real target + board
+      // counts; the displayed target is scaled by active/total boards.
+      const password = req.headers['x-miner-password'] || '';
+      if (HOST_RE.test(ip) && password) {
+        try {
+          const token = await getToken(ip, password);
+          const [fullTarget, boards] = await Promise.all([
+            fetchBosTarget(ip, token).catch(() => null),
+            fetchBosBoards(ip, token).catch(() => null),
+          ]);
+          if (boards) config.boards = boards;
+          if (fullTarget != null && fullTarget > 0) {
+            const b = config.boards;
+            const ratio = b && b.active > 0 && b.total > 0 ? b.active / b.total : 1;
+            config.fullTarget = fullTarget;
+            config.powerTarget = Math.round(fullTarget * ratio);
+          }
+        } catch { /* fall back to cgminer-derived config */ }
+      }
+
       return send(res, 200, {
         ok: true,
         live: normalizeLive(summary, stats, temps, fans, tuner),
-        config: buildConfig(tuner, temps, stats, summary),
+        config,
         model: detectModel(stats),
       });
     } catch (err) {

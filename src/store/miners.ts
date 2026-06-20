@@ -148,7 +148,7 @@ export const useMiners = create<State>()(
         const { miners } = get();
         const fetched = await Promise.all(
           miners.map(async (m) => {
-            const snap = await fetchMinerStats(m.ip);
+            const snap = await fetchMinerStats(m.ip, m.config.apiPassword);
             return { id: m.id, snap };
           })
         );

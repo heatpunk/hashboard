@@ -21,10 +21,13 @@ export interface MinerSnapshot {
   boards: { active: number; total: number } | null;
 }
 
-export async function fetchMinerStats(ip: string): Promise<MinerSnapshot | null> {
+export async function fetchMinerStats(ip: string, password?: string): Promise<MinerSnapshot | null> {
   try {
     const res = await fetch(`/api/miners/${encodeURIComponent(ip)}/stats`, {
-      signal: AbortSignal.timeout(4500),
+      // Password lets the proxy read the real power target via the Braiins
+      // gRPC API; without it the target/range fall back to cached values.
+      headers: password ? { 'x-miner-password': password } : {},
+      signal: AbortSignal.timeout(6500),
     });
     if (!res.ok) return null;
     const data = await res.json();
