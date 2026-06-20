@@ -82,21 +82,33 @@ const Index = () => {
       <section className="flex-1 flex items-center justify-center px-4 sm:px-8 py-4 min-h-0">
         <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto h-[50vh]">
           <div className="w-14 sm:w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
-            <span>{Math.floor(miner.config.powerMax / 50) * 50}</span>
-            <span>
-              {Math.round((miner.config.powerMax + miner.config.powerMin) / 100) * 50}
-            </span>
-            <span>{Math.ceil(miner.config.powerMin / 50) * 50}</span>
+            {miner.config.powerMax > 0 ? (
+              <>
+                <span>{Math.floor(miner.config.powerMax / 50) * 50}</span>
+                <span>
+                  {Math.round((miner.config.powerMax + miner.config.powerMin) / 100) * 50}
+                </span>
+                <span>{Math.ceil(miner.config.powerMin / 50) * 50}</span>
+              </>
+            ) : (
+              <span className="self-center opacity-40">—</span>
+            )}
           </div>
           <div className="flex-1 flex items-center justify-center">
             <div className="w-32 sm:w-40 h-full max-h-none">
-              <PowerSlider
-                min={miner.config.powerMin}
-                max={miner.config.powerMax}
-                value={miner.config.powerTarget}
-                onChange={(v) => setPower(miner.id, v)}
-                disabled={paused}
-              />
+              {miner.config.powerMax > 0 ? (
+                <PowerSlider
+                  min={miner.config.powerMin}
+                  max={miner.config.powerMax}
+                  value={miner.config.powerTarget}
+                  onChange={(v) => setPower(miner.id, v)}
+                  disabled={paused}
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center opacity-20 text-xs tracking-display">
+                  connecting
+                </div>
+              )}
             </div>
           </div>
           <div className="w-14 sm:w-16 flex flex-col items-end justify-center">
@@ -104,7 +116,7 @@ const Index = () => {
               Target
             </span>
             <span className="font-readout text-xl sm:text-2xl font-light leading-none mt-1.5 tabular-nums">
-              {Math.round(miner.config.powerTarget)}
+              {miner.config.powerMax > 0 ? Math.round(miner.config.powerTarget) : "—"}
             </span>
             <span className="text-[9px] tracking-display text-muted-foreground/60 mt-1">
               watt
