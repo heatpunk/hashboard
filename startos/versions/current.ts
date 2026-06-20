@@ -1,9 +1,9 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.1:0',
+  version: '0.1.2:0',
   releaseNotes: {
-    en_US: 'UX improvements: slider range rounded to nearest 50, removed arrow from footer dropdown.',
+    en_US: 'Fix power target and slider range to use actual board count from miner instead of local saved value.',
   },
   migrations: {
     up: async ({ effects }) => {},
