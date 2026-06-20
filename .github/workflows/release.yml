@@ -123,7 +123,7 @@ jobs:
             -o hashboard.s9pk
 
       - name: Inspect manifest
-        run: start-cli s9pk inspect manifest hashboard.s9pk
+        run: start-cli s9pk inspect hashboard.s9pk manifest
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

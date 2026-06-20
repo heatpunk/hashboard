@@ -23,7 +23,7 @@ pack: sdk-build/javascript/index.js
 		-o $(PKG)
 
 inspect:
-	start-cli s9pk inspect manifest $(PKG)
+	start-cli s9pk inspect $(PKG) manifest
 
 clean:
 	rm -f $(PKG)
