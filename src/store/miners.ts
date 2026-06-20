@@ -190,23 +190,12 @@ export const useMiners = create<State>()(
             const snap = entry?.snap;
             if (!snap) return m;
             const live = snap.live;
-            // Bounds are scaled to the active hashboards (active / total) by the
-            // proxy: ceiling = machine target x ratio, floor = Braiins min x ratio.
-            // Scale stored powerMax by board ratio when not all boards are
-            // active — so the slider range is correct even when machineTarget
-            // is not available from the machine.
-            const b = snap.boards ?? m.boards ?? null;
-            const boardRatio =
-              b && b.active > 0 && b.total > 0 && b.active < b.total
-                ? b.active / b.total
-                : null;
-
+            // proxy scales machineTarget by (active boards / total boards); use directly.
+            // fall back to stored powerMax when gRPC is unavailable (no password yet).
             const powerMax =
               snap.machineTarget != null && snap.machineTarget > 0
                 ? snap.machineTarget
-                : boardRatio != null
-                  ? Math.round(m.config.powerMax * boardRatio)
-                  : m.config.powerMax;
+                : m.config.powerMax;
             const powerMin =
               snap.machineMin != null && snap.machineMin > 0
                 ? Math.min(snap.machineMin, powerMax)
