@@ -102,7 +102,7 @@ jobs:
       - name: Pack s9pk
         run: |
           start-cli s9pk pack \
-            --javascript sdk-build/javascript \
+            --javascript "$GITHUB_WORKSPACE/sdk-build/javascript" \
             --icon startos/icon.png \
             --instructions startos/instructions.md \
             --license LICENSE \
