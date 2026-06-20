@@ -174,6 +174,7 @@ async function getToken(ip, password) {
 // arrives as a string. Power-target mode → powerTargetModeState.currentTarget.
 async function fetchBosTarget(ip, token) {
   const r = await grpcCall(ip, 'braiins.bos.v1.PerformanceService/GetTunerState', {}, token);
+  console.log(`[grpc] GetTunerState ${ip}:`, JSON.stringify(r).slice(0, 300));
   const w = r?.powerTargetModeState?.currentTarget?.watt
     ?? r?.powerTargetModeState?.profile?.target?.watt;
   return w != null ? Number(w) : null;
@@ -183,6 +184,7 @@ async function fetchBosTarget(ip, token) {
 async function fetchBosBoards(ip, token) {
   const r = await grpcCall(ip, 'braiins.bos.v1.MinerService/GetHashboards', {}, token);
   const boards = r?.hashboards;
+  console.log(`[grpc] GetHashboards ${ip}: total=${Array.isArray(boards) ? boards.length : 'null'} enabled=${Array.isArray(boards) ? boards.filter(b => b.enabled).length : 'null'} raw=${JSON.stringify(boards ?? null).slice(0, 200)}`);
   if (!Array.isArray(boards) || boards.length === 0) return null;
   const total = boards.length;
   const active = boards.filter(b => b.enabled).length || total;
@@ -234,12 +236,13 @@ http.createServer(async (req, res) => {
           try {
             const token = await getToken(ip, password);
             const [fullTarget, grpcBoards] = await Promise.all([
-              fetchBosTarget(ip, token).catch(() => null),
-              fetchBosBoards(ip, token).catch(() => null),
+              fetchBosTarget(ip, token).catch(e => { console.error(`[grpc] GetTunerState ${ip} error:`, e.message); return null; }),
+              fetchBosBoards(ip, token).catch(e => { console.error(`[grpc] GetHashboards ${ip} error:`, e.message); return null; }),
             ]);
+            console.log(`[grpc] ${ip} fullTarget=${fullTarget} grpcBoards=${JSON.stringify(grpcBoards)} tempsTotal=${tempsTotal}`);
             if (grpcBoards != null) {
-              // grpcBoards.active = enabled boards from gRPC
-              // tempsTotal = physical board count from CGMiner (more reliable as total)
+              // grpcBoards.active = enabled boards from gRPC (all boards returned, enabled flag per board)
+              // tempsTotal = physical board count from CGMiner temps (reliable as total)
               config.boards = {
                 active: grpcBoards.active,
                 total: tempsTotal > 0 ? tempsTotal : grpcBoards.total,
@@ -251,8 +254,10 @@ http.createServer(async (req, res) => {
               config.fullTarget = fullTarget;
               config.powerTarget = Math.round(fullTarget * ratio);
             }
+            console.log(`[grpc] ${ip} result: boards=${JSON.stringify(config.boards)} powerTarget=${config.powerTarget}`);
             authNeeded.delete(ip);
           } catch (e) {
+            console.error(`[grpc] ${ip} auth/outer error:`, e.message);
             if (isAuthError(e.message)) {
               needPassword = true;
               if (!password) authNeeded.set(ip, Date.now() + 30000);
