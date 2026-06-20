@@ -13,7 +13,7 @@ export const manifest = setupManifest({
   volumes: ['main'],
   images: {
     hashboard: {
-      source: { dockerTag: 'ghcr.io/heatpunk/hashboard:0.1.5' },
+      source: { dockerTag: 'ghcr.io/heatpunk/hashboard:0.1.6' },
       arch: ['x86_64'],
     },
   },
