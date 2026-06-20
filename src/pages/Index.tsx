@@ -5,6 +5,7 @@ import { Readout } from "@/components/Readout";
 import { MinerSwitcher } from "@/components/MinerSwitcher";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { PasswordDialog } from "@/components/PasswordDialog";
+import { axisLabels } from "@/lib/axis";
 import { Settings, Pause, Play } from "lucide-react";
 
 const Index = () => {
@@ -65,6 +66,7 @@ const Index = () => {
       : "—";
   const intent = intents[miner.id];
   const paused = intent ? intent.paused : liveMode ? miner.live.th <= 0.5 : miner.status === "paused";
+  const axis = axisLabels(miner.config.powerMin, miner.config.powerMax);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -84,11 +86,9 @@ const Index = () => {
           <div className="w-14 sm:w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
             {miner.config.powerMax > 0 ? (
               <>
-                <span>{Math.floor(miner.config.powerMax / 50) * 50}</span>
-                <span>
-                  {Math.round((miner.config.powerMax + miner.config.powerMin) / 100) * 50}
-                </span>
-                <span>{Math.ceil(miner.config.powerMin / 50) * 50}</span>
+                <span>{axis.top}</span>
+                <span>{axis.mid}</span>
+                <span>{axis.bottom}</span>
               </>
             ) : (
               <span className="self-center opacity-40">—</span>
