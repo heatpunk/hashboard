@@ -99,6 +99,9 @@ jobs:
       - name: Build SDK JavaScript
         run: cd sdk-build && npm run build
 
+      - name: Generate developer key
+        run: start-cli init-key
+
       - name: Pack s9pk
         run: |
           start-cli s9pk pack \
