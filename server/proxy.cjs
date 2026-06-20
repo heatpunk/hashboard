@@ -100,10 +100,11 @@ function buildConfig(tuner, temps, stats, summary) {
   const ts = (tuner?.TUNERSTATUS ?? [])[0] ?? {};
   const s = (summary?.SUMMARY ?? [])[0] ?? {};
 
-  // Try all known field names across CGMiner, Braiins BOS, and stock Antminer firmware
+  // Try all known field names across CGMiner, Braiins BOS, and stock Antminer firmware.
+  // Braiins BOS may use 'Power Limit' (spaced) or 'PowerTarget'; stock Antminer uses 'Power_Limit'.
   const rawLimit =
-    ts.PowerLimit ?? ts.power_limit ??
-    s.PowerLimit ?? s['Power_Limit'] ?? s.power_limit ??
+    ts.PowerLimit ?? ts['Power Limit'] ?? ts.PowerTarget ?? ts.power_limit ??
+    s.PowerLimit ?? s['Power Limit'] ?? s['Power_Limit'] ?? s.power_limit ??
     null;
   const fullTarget = rawLimit != null && Number(rawLimit) > 0 ? Number(rawLimit) : null;
 
@@ -238,6 +239,18 @@ http.createServer(async (req, res) => {
       }
     });
     return;
+  }
+
+  const rawMatch = url.pathname.match(/^\/api\/miners\/([^/]+)\/rawdata$/);
+  if (rawMatch) {
+    const ip = decodeURIComponent(rawMatch[1]);
+    if (!HOST_RE.test(ip)) return send(res, 400, { ok: false, error: 'bad host' });
+    const results = {};
+    await Promise.all(['summary', 'stats', 'temps', 'fans', 'tunerstatus'].map(async cmd => {
+      try { results[cmd] = await cgMinerQuery(ip, cmd); }
+      catch (e) { results[cmd] = { error: e.message }; }
+    }));
+    return send(res, 200, { ok: true, raw: results });
   }
 
   if (url.pathname === '/api/scan') {
