@@ -19,6 +19,8 @@ export interface MinerSnapshot {
   machineMin: number | null;
   /** active vs total hashboards */
   boards: { active: number; total: number } | null;
+  /** miner is reachable but needs an API password to read its power target */
+  needPassword: boolean;
 }
 
 export async function fetchMinerStats(ip: string, password?: string): Promise<MinerSnapshot | null> {
@@ -37,6 +39,7 @@ export async function fetchMinerStats(ip: string, password?: string): Promise<Mi
       machineTarget: (data.config?.powerTarget ?? null) as number | null,
       machineMin: (data.config?.powerMin ?? null) as number | null,
       boards: (data.config?.boards ?? null) as { active: number; total: number } | null,
+      needPassword: !!data.needPassword,
     };
   } catch {
     return null;

@@ -28,7 +28,9 @@ export function PasswordDialog() {
             Miner password
           </DialogTitle>
           <DialogDescription className="text-xs">
-            This miner requires a password for control. Enter its BraiinsOS+ password (username: root). It is stored only on this device.
+            {pwPrompt?.reason === "read"
+              ? "This miner needs its password to read the power target. Enter its BraiinsOS+ password (username: root). It is stored only on this device."
+              : "This miner requires a password for control. Enter its BraiinsOS+ password (username: root). It is stored only on this device."}
           </DialogDescription>
         </DialogHeader>
         <form

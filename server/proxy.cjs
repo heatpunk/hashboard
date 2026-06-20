@@ -176,6 +176,12 @@ async function minerLogin(ip, password) {
 
 // Cache auth tokens briefly so polling doesn't log in on every request.
 const tokenCache = new Map(); // ip -> { token, expires }
+// Throttle repeated failed empty-password logins (one per ip per 30s).
+const authNeeded = new Map(); // ip -> expires
+
+function isAuthError(msg) {
+  return /denied|unauth|invalid|permission|password|credential|login failed/i.test(msg || '');
+}
 async function getToken(ip, password) {
   const cached = tokenCache.get(ip);
   if (cached && cached.expires > Date.now()) return cached.token;
@@ -235,24 +241,39 @@ http.createServer(async (req, res) => {
       const config = buildConfig(tuner, temps, stats, summary);
 
       // The configured power target is only readable via the authenticated
-      // Braiins gRPC API. With a password we fetch the real target + board
-      // counts; the displayed target is scaled by active/total boards.
+      // Braiins gRPC API — the open CGMiner API never exposes it. We fetch the
+      // real target + board counts and scale the displayed target by
+      // active/total boards. If the miner needs a password we couldn't supply,
+      // signal needPassword so the app can prompt for it (same as control).
       const password = req.headers['x-miner-password'] || '';
-      if (HOST_RE.test(ip) && password) {
-        try {
-          const token = await getToken(ip, password);
-          const [fullTarget, boards] = await Promise.all([
-            fetchBosTarget(ip, token).catch(() => null),
-            fetchBosBoards(ip, token).catch(() => null),
-          ]);
-          if (boards) config.boards = boards;
-          if (fullTarget != null && fullTarget > 0) {
-            const b = config.boards;
-            const ratio = b && b.active > 0 && b.total > 0 ? b.active / b.total : 1;
-            config.fullTarget = fullTarget;
-            config.powerTarget = Math.round(fullTarget * ratio);
+      let needPassword = false;
+      if (HOST_RE.test(ip)) {
+        const throttled = !password && (authNeeded.get(ip) ?? 0) > Date.now();
+        if (throttled) {
+          needPassword = true;
+        } else {
+          try {
+            const token = await getToken(ip, password);
+            const [fullTarget, boards] = await Promise.all([
+              fetchBosTarget(ip, token).catch(() => null),
+              fetchBosBoards(ip, token).catch(() => null),
+            ]);
+            if (boards) config.boards = boards;
+            if (fullTarget != null && fullTarget > 0) {
+              const b = config.boards;
+              const ratio = b && b.active > 0 && b.total > 0 ? b.active / b.total : 1;
+              config.fullTarget = fullTarget;
+              config.powerTarget = Math.round(fullTarget * ratio);
+            }
+            authNeeded.delete(ip);
+          } catch (e) {
+            if (isAuthError(e.message)) {
+              needPassword = true;
+              if (!password) authNeeded.set(ip, Date.now() + 30000);
+            }
+            // otherwise fall back to cgminer-derived config
           }
-        } catch { /* fall back to cgminer-derived config */ }
+        }
       }
 
       return send(res, 200, {
@@ -260,6 +281,7 @@ http.createServer(async (req, res) => {
         live: normalizeLive(summary, stats, temps, fans, tuner),
         config,
         model: detectModel(stats),
+        needPassword,
       });
     } catch (err) {
       return send(res, 502, { ok: false, error: err.message });
