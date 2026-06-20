@@ -265,15 +265,15 @@ export const useMiners = create<State>()(
               status: "mining" as const,
               config: {
                 name: d.ip,
-                powerMin: 500,
-                powerMax: 2000,
-                powerTarget: 1200,
+                powerMin: 0,
+                powerMax: 0,
+                powerTarget: 0,
               },
               live: {
                 th: d.live.th,
-                watts: d.live.watts ?? 1200,
-                chipTemp: d.live.chipTemp ?? 60,
-                fanSpeed: d.live.fanSpeed ?? 60,
+                watts: d.live.watts ?? 0,
+                chipTemp: d.live.chipTemp ?? 0,
+                fanSpeed: d.live.fanSpeed ?? 0,
               },
             }));
           return { scanning: false, miners: [...s.miners, ...newMiners] };
@@ -281,8 +281,9 @@ export const useMiners = create<State>()(
       },
 
       _tick: () => {
-        // In live mode the real values come from pollLive — don't let the
-        // simulation overwrite them.
+        // In live mode the real values come from pollLive — don't simulate.
+        // In non-live mode, only animate paused miners (lerp toward 0);
+        // mining miners keep their last known real values unchanged.
         if (get().liveMode) return;
         set((s) => ({
           miners: s.miners.map((m) => {
@@ -298,18 +299,7 @@ export const useMiners = create<State>()(
                 },
               };
             }
-            const target = m.config.powerTarget;
-            const targetTh = target / 11.5 + jitter(1.2);
-            const targetTemp = 45 + (target - 500) * 0.022 + jitter(0.6);
-            return {
-              ...m,
-              live: {
-                watts: lerp(m.live.watts, target + jitter(6), 0.08),
-                th: lerp(m.live.th, targetTh, 0.08),
-                chipTemp: lerp(m.live.chipTemp, targetTemp, 0.04),
-                fanSpeed: lerp(m.live.fanSpeed, 60, 0.06),
-              },
-            };
+            return m;
           }),
         }));
       },
@@ -327,8 +317,5 @@ export const useMiners = create<State>()(
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
-}
-function jitter(amp: number) {
-  return (Math.random() - 0.5) * 2 * amp;
 }
 
