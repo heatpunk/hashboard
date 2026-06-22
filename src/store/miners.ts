@@ -192,25 +192,19 @@ export const useMiners = create<State>()(
             // No response this poll → mark offline, keep last known values.
             if (!snap) return { ...m, online: false };
             const live = snap.live;
-            // MAX is the whole-machine power limit (scale ceiling). The Target
-            // is that limit scaled to the *active* boards, rounded to 50 W —
-            // e.g. 1718 W over 2 of 3 boards → 1150 W. These are DISTINCT: the
-            // dial fills to the Target inside the full-machine scale.
-            const powerMax =
-              snap.machineMax != null && snap.machineMax > 0
-                ? snap.machineMax
-                : m.config.powerMax;
+            // The whole-machine power limit (e.g. 1718 W) exists ONLY to be
+            // divided across the boards — it is never shown as-is. Both the
+            // scale MAX and the Target are the active boards' share, rounded to
+            // 50 W: (limit / total) * active. 1718 W over 2 of 3 → 1150 W. The
+            // scale tops out exactly there — not one watt more.
             const boards = snap.boards ?? m.boards;
-            // Braiins floor isn't exposed over the open API → dial floor is 0.
-            const powerMin =
-              snap.machineMin != null && snap.machineMin > 0
-                ? Math.min(snap.machineMin, powerMax)
-                : 0;
-            const target =
-              boards && powerMax > 0
-                ? scaledTarget(powerMax, boards.active, boards.total)
-                : powerMax;
-            const powerTarget = Math.min(powerMax || target, Math.max(powerMin, target));
+            const scaled =
+              snap.machineFull != null && snap.machineFull > 0 && boards
+                ? scaledTarget(snap.machineFull, boards.active, boards.total)
+                : m.config.powerTarget || 0; // no fresh data → keep last good
+            const powerMin = 0;
+            const powerMax = scaled;
+            const powerTarget = scaled;
             return {
               ...m,
               online: true,
