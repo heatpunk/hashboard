@@ -168,16 +168,20 @@ async function getToken(ip, password) {
   return token;
 }
 
-// The configured power target lives ONLY in the Braiins OS gRPC API
-// (PerformanceService/GetTunerState) — it is NOT exposed by the open CGMiner
-// TCP API. grpcurl emits proto fields in lowerCamelCase; Power.watt (uint64)
-// arrives as a string. Power-target mode → powerTargetModeState.currentTarget.
+// The configured power target AND floor live ONLY in the Braiins OS gRPC API
+// (PerformanceService/GetTunerState) — not exposed by the open CGMiner TCP API.
+// grpcurl emits proto fields in lowerCamelCase; Power.watt (uint64) arrives as string.
+// Returns { target, min } — both may be null if the field is absent.
 async function fetchBosTarget(ip, token) {
   const r = await grpcCall(ip, 'braiins.bos.v1.PerformanceService/GetTunerState', {}, token);
-  console.log(`[grpc] GetTunerState ${ip}:`, JSON.stringify(r).slice(0, 300));
-  const w = r?.powerTargetModeState?.currentTarget?.watt
+  console.log(`[grpc] GetTunerState ${ip}:`, JSON.stringify(r).slice(0, 1000));
+  const targetWatt = r?.powerTargetModeState?.currentTarget?.watt
     ?? r?.powerTargetModeState?.profile?.target?.watt;
-  return w != null ? Number(w) : null;
+  const minWatt = r?.powerTargetModeState?.powerRangeConstraint?.minPowerTarget?.watt;
+  return {
+    target: targetWatt != null ? Number(targetWatt) : null,
+    min: minWatt != null ? Number(minWatt) : null,
+  };
 }
 
 // Real total vs active hashboards from gRPC (each board carries an `enabled` flag).
@@ -235,11 +239,12 @@ http.createServer(async (req, res) => {
         } else {
           try {
             const token = await getToken(ip, password);
-            const [fullTarget, grpcBoards] = await Promise.all([
-              fetchBosTarget(ip, token).catch(e => { console.error(`[grpc] GetTunerState ${ip} error:`, e.message); return null; }),
+            const [bosResult, grpcBoards] = await Promise.all([
+              fetchBosTarget(ip, token).catch(e => { console.error(`[grpc] GetTunerState ${ip} error:`, e.message); return { target: null, min: null }; }),
               fetchBosBoards(ip, token).catch(e => { console.error(`[grpc] GetHashboards ${ip} error:`, e.message); return null; }),
             ]);
-            console.log(`[grpc] ${ip} fullTarget=${fullTarget} grpcBoards=${JSON.stringify(grpcBoards)} tempsTotal=${tempsTotal}`);
+            const { target: fullTarget, min: fullMin } = bosResult ?? { target: null, min: null };
+            console.log(`[grpc] ${ip} fullTarget=${fullTarget} fullMin=${fullMin} grpcBoards=${JSON.stringify(grpcBoards)} tempsTotal=${tempsTotal}`);
             if (grpcBoards != null) {
               // grpcBoards.active = enabled boards from gRPC (all boards returned, enabled flag per board)
               // tempsTotal = physical board count from CGMiner temps (reliable as total)
@@ -248,13 +253,16 @@ http.createServer(async (req, res) => {
                 total: tempsTotal > 0 ? tempsTotal : grpcBoards.total,
               };
             }
+            const ratio = config.boards && config.boards.active > 0 && config.boards.total > 0
+              ? config.boards.active / config.boards.total : 1;
             if (fullTarget != null && fullTarget > 0) {
-              const b = config.boards;
-              const ratio = b && b.active > 0 && b.total > 0 ? b.active / b.total : 1;
               config.fullTarget = fullTarget;
               config.powerTarget = Math.round(fullTarget * ratio);
             }
-            console.log(`[grpc] ${ip} result: boards=${JSON.stringify(config.boards)} powerTarget=${config.powerTarget}`);
+            if (fullMin != null && fullMin > 0) {
+              config.powerMin = Math.round(fullMin * ratio);
+            }
+            console.log(`[grpc] ${ip} result: boards=${JSON.stringify(config.boards)} powerTarget=${config.powerTarget} powerMin=${config.powerMin}`);
             authNeeded.delete(ip);
           } catch (e) {
             console.error(`[grpc] ${ip} auth/outer error:`, e.message);

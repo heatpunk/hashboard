@@ -306,6 +306,27 @@ export const useMiners = create<State>()(
     }),
     {
       name: STORAGE_KEY,
+      version: 1,
+      // v0→v1: power values and live readings now come exclusively from gRPC;
+      // reset any stale hardcoded seed data so the UI shows "connecting" on
+      // first load instead of wrong demo numbers from previous versions.
+      migrate: (persisted) => {
+        const s = persisted as { miners?: Miner[]; selectedId?: string | null; theme?: "light" | "dark" };
+        return {
+          ...s,
+          miners: (s.miners ?? []).map((m) => ({
+            ...m,
+            config: {
+              name: m.config?.name ?? m.ip ?? "",
+              powerMin: 0,
+              powerMax: 0,
+              powerTarget: 0,
+              apiPassword: m.config?.apiPassword,
+            },
+            live: { th: 0, watts: 0, chipTemp: 0, fanSpeed: 0 },
+          })),
+        };
+      },
       partialize: (s) => ({
         miners: s.miners,
         selectedId: s.selectedId,
