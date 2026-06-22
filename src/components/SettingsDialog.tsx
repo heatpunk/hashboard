@@ -94,8 +94,8 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
             </div>
             <p className="text-[10px] text-muted-foreground/70 leading-snug">
               {miner.boards
-                ? `${miner.boards.active} / ${miner.boards.total} hashboards active — limits scale to this`
-                : "Scaled to active hashboards"}
+                ? `${miner.boards.active} / ${miner.boards.total} hashboards active — Max is the whole machine; the dial Target is these ${miner.boards.active} boards' share, to the nearest 50 W`
+                : "Target scales to the active hashboards"}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
