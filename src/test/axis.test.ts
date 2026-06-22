@@ -2,25 +2,42 @@ import { describe, it, expect } from "vitest";
 import { axisLabels } from "@/lib/axis";
 
 describe("axisLabels", () => {
-  it("brackets the live 2-of-3-board values (floor 629, target 1145)", () => {
-    const { top, mid, bottom } = axisLabels(629, 1145);
-    expect(top).toBe(1150); // rounded UP past the 1145 target
-    expect(bottom).toBe(600); // rounded DOWN past the 629 floor
-    expect(mid).toBeGreaterThan(bottom);
-    expect(mid).toBeLessThan(top);
+  // The scale tops out at the active-board target (machine limit / total *
+  // active, rounded to 50) — NOT the whole-machine limit. These are the live
+  // values: .106 = 1718/3*2 = 1150, .120 = 1798/3*1 = 600.
+  it("Cellarheater: scale 0 → 1150 W (active-board max) → ticks 0 / 600 / 1150", () => {
+    const { top, mid, bottom } = axisLabels(0, 1150);
+    expect(bottom).toBe(0);
+    expect(mid).toBe(600);
+    expect(top).toBe(1150);
   });
 
-  it("never crops the band inward, for any board count", () => {
+  it("Garageheater: scale 0 → 600 W → ticks 0 / 300 / 600", () => {
+    const { top, mid, bottom } = axisLabels(0, 600);
+    expect(bottom).toBe(0);
+    expect(mid).toBe(300);
+    expect(top).toBe(600);
+  });
+
+  it("the top tick never exceeds the max — not one watt more", () => {
+    // The max is always a multiple of 50 (round-to-50 target), so the top tick
+    // equals it exactly and the scale never implies headroom above the target.
+    for (const max of [1150, 600, 1700, 50, 850]) {
+      expect(axisLabels(0, max).top).toBe(max);
+    }
+  });
+
+  it("top tick brackets the max; bottom brackets the min", () => {
     const cases: [number, number][] = [
-      [629, 1145], // 2/3 boards active
-      [572, 1718], // 3/3 boards (full machine)
-      [314, 573], //  1/3 boards active
-      [600, 600], //  degenerate min == max
+      [0, 1150],
+      [0, 600],
+      [0, 1700],
+      [600, 600], // degenerate min == max
     ];
     for (const [min, max] of cases) {
       const { top, bottom } = axisLabels(min, max);
-      expect(top).toBeGreaterThanOrEqual(max); // top tick never below the target
-      expect(bottom).toBeLessThanOrEqual(min); // bottom tick never above the floor
+      expect(top).toBeGreaterThanOrEqual(max);
+      expect(bottom).toBeLessThanOrEqual(min);
     }
   });
 });

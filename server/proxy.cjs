@@ -58,6 +58,21 @@ function cgMinerQuery(ip, command) {
   });
 }
 
+// Ask the miner for several commands over ONE connection using CGMiner's
+// `a+b+c` multi-command syntax. Firing many parallel sockets at a single miner
+// drops replies on slower units (the intermittent blank target/range); one
+// socket is reliable. The multi reply nests each result as { cmd: [ {...} ] };
+// unwrap to { cmd: {...} } so callers see the same shape as a single query.
+async function cgMinerMultiQuery(ip, commands) {
+  const raw = await cgMinerQuery(ip, commands.join('+'));
+  const out = {};
+  for (const cmd of commands) {
+    const v = raw?.[cmd];
+    out[cmd] = Array.isArray(v) ? (v[0] ?? {}) : {};
+  }
+  return out;
+}
+
 function normalizeLive(summary, stats, temps, fans, tuner) {
   const s = (summary?.SUMMARY ?? [])[0] ?? {};
   const st = (stats?.STATS ?? []).find(x => x['GHS av'] != null || x['GHS 5s'] != null) ?? {};
@@ -96,28 +111,49 @@ function normalizeLive(summary, stats, temps, fans, tuner) {
   return { th, watts, chipTemp, fanSpeed };
 }
 
-function buildConfig() {
-  // CGMiner doesn't expose the Braiins power limit or active board count reliably.
-  // These are filled from gRPC (fetchBosTarget/fetchBosBoards) in the stats endpoint.
-  return { powerTarget: null, powerMin: null, fullTarget: null, boards: null };
-}
-
-function detectModel(stats) {
+function detectModel(stats, devdetails) {
+  // Braiins reports the model in devdetails (e.g. "Antminer S19j Pro"); the
+  // legacy stats.Type is empty on current BOSer builds.
+  const dd = (devdetails?.DEVDETAILS ?? []).find(x => x.Model) ?? {};
+  if (dd.Model) return dd.Model;
   const st = (stats?.STATS ?? []).find(x => x.Type) ?? {};
   return st.Type || 'Antminer';
 }
 
+// Physical hashboard slots for the machine. The miner only reports *populated*
+// boards, so when a board is pulled/disabled the total must come from the model.
+// Every Antminer S/T-series in this class ships 3 hashboards.
+const BOARDS_BY_MODEL = [
+  { re: /\b[ST](9|17|19|21)\b/i, boards: 3 },
+];
+function modelBoardCount(model) {
+  for (const { re, boards } of BOARDS_BY_MODEL) if (re.test(model || '')) return boards;
+  return 3; // sane default — virtually all Antminers have 3 hashboards
+}
+
+// Boards actually present & hashing. Braiins drops missing/disabled boards from
+// `devs` entirely, so the count of alive ASCs IS the active-board count.
+function activeBoardCount(devs, devdetails, temps) {
+  const alive = (devs?.DEVS ?? []).filter(d => d.Enabled === 'Y' && d.Status === 'Alive');
+  if (alive.length) return alive.length;
+  const dd = (devdetails?.DEVDETAILS ?? []).filter(d => d.Model);
+  if (dd.length) return dd.length;
+  return (temps?.TEMPS ?? []).length;
+}
+
+// Whole-machine power target (the slider ceiling) from the open CGMiner API —
+// no password required. PowerLimit is the configured tuner target in watts.
+function fullPowerTarget(tuner) {
+  const ts = (tuner?.TUNERSTATUS ?? [])[0] ?? {};
+  const v = ts.PowerLimit ?? ts?.DynamicPowerScaling?.ScaledPowerLimit ?? null;
+  return v != null && Number(v) > 0 ? Number(v) : null;
+}
+
 async function probeMiner(ip) {
   try {
-    const summary = await cgMinerQuery(ip, 'summary');
-    if (!summary?.SUMMARY?.[0]) return null;
-    const [stats, temps, fans, tuner] = await Promise.all([
-      cgMinerQuery(ip, 'stats').catch(() => ({})),
-      cgMinerQuery(ip, 'temps').catch(() => ({})),
-      cgMinerQuery(ip, 'fans').catch(() => ({})),
-      cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
-    ]);
-    return { ip, model: detectModel(stats), live: normalizeLive(summary, stats, temps, fans, tuner), config: buildConfig() };
+    const q = await cgMinerMultiQuery(ip, ['summary', 'stats', 'devdetails', 'temps', 'fans', 'tunerstatus']);
+    if (!q.summary?.SUMMARY?.[0]) return null;
+    return { ip, model: detectModel(q.stats, q.devdetails), live: normalizeLive(q.summary, q.stats, q.temps, q.fans, q.tunerstatus), config: { powerTarget: null, powerMin: null, fullTarget: null, boards: null } };
   } catch {
     return null;
   }
@@ -152,49 +188,6 @@ async function minerLogin(ip, password) {
   return r.token;
 }
 
-// Cache auth tokens briefly so polling doesn't log in on every request.
-const tokenCache = new Map(); // ip -> { token, expires }
-// Throttle repeated failed empty-password logins (one per ip per 30s).
-const authNeeded = new Map(); // ip -> expires
-
-function isAuthError(msg) {
-  return /denied|unauth|invalid|permission|password|credential|login failed/i.test(msg || '');
-}
-async function getToken(ip, password) {
-  const cached = tokenCache.get(ip);
-  if (cached && cached.expires > Date.now()) return cached.token;
-  const token = await minerLogin(ip, password);
-  tokenCache.set(ip, { token, expires: Date.now() + 60000 });
-  return token;
-}
-
-// The configured power target AND floor live ONLY in the Braiins OS gRPC API
-// (PerformanceService/GetTunerState) — not exposed by the open CGMiner TCP API.
-// grpcurl emits proto fields in lowerCamelCase; Power.watt (uint64) arrives as string.
-// Returns { target, min } — both may be null if the field is absent.
-async function fetchBosTarget(ip, token) {
-  const r = await grpcCall(ip, 'braiins.bos.v1.PerformanceService/GetTunerState', {}, token);
-  console.log(`[grpc] GetTunerState ${ip}:`, JSON.stringify(r).slice(0, 1000));
-  const targetWatt = r?.powerTargetModeState?.currentTarget?.watt
-    ?? r?.powerTargetModeState?.profile?.target?.watt;
-  const minWatt = r?.powerTargetModeState?.powerRangeConstraint?.minPowerTarget?.watt;
-  return {
-    target: targetWatt != null ? Number(targetWatt) : null,
-    min: minWatt != null ? Number(minWatt) : null,
-  };
-}
-
-// Real total vs active hashboards from gRPC (each board carries an `enabled` flag).
-async function fetchBosBoards(ip, token) {
-  const r = await grpcCall(ip, 'braiins.bos.v1.MinerService/GetHashboards', {}, token);
-  const boards = r?.hashboards;
-  console.log(`[grpc] GetHashboards ${ip}: total=${Array.isArray(boards) ? boards.length : 'null'} enabled=${Array.isArray(boards) ? boards.filter(b => b.enabled).length : 'null'} raw=${JSON.stringify(boards ?? null).slice(0, 200)}`);
-  if (!Array.isArray(boards) || boards.length === 0) return null;
-  const total = boards.length;
-  const active = boards.filter(b => b.enabled).length || total;
-  return { active, total };
-}
-
 function send(res, status, body) {
   res.writeHead(status, {
     'Content-Type': 'application/json',
@@ -214,72 +207,35 @@ http.createServer(async (req, res) => {
   if (statsMatch) {
     const ip = decodeURIComponent(statsMatch[1]);
     try {
-      const [summary, stats, temps, fans, tuner] = await Promise.all([
-        cgMinerQuery(ip, 'summary'),
-        cgMinerQuery(ip, 'stats').catch(() => ({})),
-        cgMinerQuery(ip, 'temps').catch(() => ({})),
-        cgMinerQuery(ip, 'fans').catch(() => ({})),
-        cgMinerQuery(ip, 'tunerstatus').catch(() => ({})),
-      ]);
+      // Everything the dial needs is in the open CGMiner API (port 4028) — no
+      // password. tunerstatus.PowerLimit = whole-machine target; devs = boards
+      // actually hashing; devdetails = model → physical board count. One
+      // connection (multi-command) so a slower miner never drops part of it.
+      const q = await cgMinerMultiQuery(ip, ['summary', 'stats', 'devs', 'devdetails', 'temps', 'fans', 'tunerstatus']);
+      const { summary, stats, devs, devdetails, temps, fans, tunerstatus: tuner } = q;
 
-      const config = buildConfig();
-      // CGMiner temps entries correspond to physical hashboards (including inactive ones).
-      // Used as the reliable total board count when gRPC only returns enabled boards.
-      const tempsTotal = (temps?.TEMPS ?? []).length;
+      const model = detectModel(stats, devdetails);
+      const active = activeBoardCount(devs, devdetails, temps);
+      // total is a model property; never let it drop below the active count.
+      const total = Math.max(active, modelBoardCount(model));
+      const fullTarget = fullPowerTarget(tuner);
 
-      // The configured power target lives only in the authenticated Braiins gRPC API.
-      // We fetch target + enabled board count, combine with CGMiner temps total to get
-      // the correct active/total ratio, and scale the target accordingly.
-      const password = req.headers['x-miner-password'] || '';
-      let needPassword = false;
-      if (HOST_RE.test(ip)) {
-        const throttled = !password && (authNeeded.get(ip) ?? 0) > Date.now();
-        if (throttled) {
-          needPassword = true;
-        } else {
-          try {
-            const token = await getToken(ip, password);
-            const [bosResult, grpcBoards] = await Promise.all([
-              fetchBosTarget(ip, token).catch(e => { console.error(`[grpc] GetTunerState ${ip} error:`, e.message); return { target: null, min: null }; }),
-              fetchBosBoards(ip, token).catch(e => { console.error(`[grpc] GetHashboards ${ip} error:`, e.message); return null; }),
-            ]);
-            const { target: fullTarget, min: fullMin } = bosResult ?? { target: null, min: null };
-            console.log(`[grpc] ${ip} fullTarget=${fullTarget} fullMin=${fullMin} grpcBoards=${JSON.stringify(grpcBoards)} tempsTotal=${tempsTotal}`);
-            if (grpcBoards != null) {
-              // grpcBoards.active = enabled boards from gRPC (all boards returned, enabled flag per board)
-              // tempsTotal = physical board count from CGMiner temps (reliable as total)
-              config.boards = {
-                active: grpcBoards.active,
-                total: tempsTotal > 0 ? tempsTotal : grpcBoards.total,
-              };
-            }
-            const ratio = config.boards && config.boards.active > 0 && config.boards.total > 0
-              ? config.boards.active / config.boards.total : 1;
-            if (fullTarget != null && fullTarget > 0) {
-              config.fullTarget = fullTarget;
-              config.powerTarget = Math.round(fullTarget * ratio);
-            }
-            if (fullMin != null && fullMin > 0) {
-              config.powerMin = Math.round(fullMin * ratio);
-            }
-            console.log(`[grpc] ${ip} result: boards=${JSON.stringify(config.boards)} powerTarget=${config.powerTarget} powerMin=${config.powerMin}`);
-            authNeeded.delete(ip);
-          } catch (e) {
-            console.error(`[grpc] ${ip} auth/outer error:`, e.message);
-            if (isAuthError(e.message)) {
-              needPassword = true;
-              if (!password) authNeeded.set(ip, Date.now() + 30000);
-            }
-          }
-        }
-      }
+      // fullTarget = scale ceiling (MAX). The client scales it by active/total
+      // to the nearest 50 W for the Target readout. powerMin: the Braiins floor
+      // isn't on the open API, so the dial floor is 0.
+      const config = {
+        fullTarget,
+        powerMin: null,
+        boards: active > 0 ? { active, total } : null,
+      };
+      console.log(`[stats] ${ip} model="${model}" fullTarget=${fullTarget} boards=${active}/${total}`);
 
       return send(res, 200, {
         ok: true,
         live: normalizeLive(summary, stats, temps, fans, tuner),
         config,
-        model: detectModel(stats),
-        needPassword,
+        model,
+        needPassword: false,
       });
     } catch (err) {
       return send(res, 502, { ok: false, error: err.message });
@@ -320,12 +276,12 @@ http.createServer(async (req, res) => {
   if (rawMatch) {
     const ip = decodeURIComponent(rawMatch[1]);
     if (!HOST_RE.test(ip)) return send(res, 400, { ok: false, error: 'bad host' });
-    const results = {};
-    await Promise.all(['summary', 'stats', 'temps', 'fans', 'tunerstatus'].map(async cmd => {
-      try { results[cmd] = await cgMinerQuery(ip, cmd); }
-      catch (e) { results[cmd] = { error: e.message }; }
-    }));
-    return send(res, 200, { ok: true, raw: results });
+    try {
+      const raw = await cgMinerMultiQuery(ip, ['summary', 'stats', 'devs', 'devdetails', 'temps', 'fans', 'tunerstatus']);
+      return send(res, 200, { ok: true, raw });
+    } catch (e) {
+      return send(res, 502, { ok: false, error: e.message });
+    }
   }
 
   if (url.pathname === '/api/scan') {

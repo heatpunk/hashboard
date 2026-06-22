@@ -7,7 +7,42 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Radar, Loader2, Circle } from "lucide-react";
+import { Radar, Loader2, Check } from "lucide-react";
+import { displayStatus, statusLabel, type DisplayStatus } from "@/lib/status";
+
+// Status colours, used identically for the trigger dot and every list dot so
+// two running miners never render differently. Green = mining, grey = paused,
+// red = offline.
+const DOT_BG: Record<DisplayStatus, string> = {
+  mining: "hsl(140 70% 50%)",
+  paused: "hsl(var(--muted-foreground))",
+  offline: "hsl(var(--destructive))",
+};
+const LABEL_CLASS: Record<DisplayStatus, string> = {
+  mining: "text-[hsl(140_70%_45%)]",
+  paused: "text-muted-foreground",
+  offline: "text-destructive",
+};
+
+function StatusDot({ status }: { status: DisplayStatus }) {
+  return (
+    <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
+      {status === "mining" && (
+        <span
+          className="absolute inset-0 rounded-full blur-[2px]"
+          style={{ background: "hsl(140 80% 55% / 0.7)" }}
+        />
+      )}
+      <span
+        className="relative h-2 w-2 rounded-full"
+        style={{
+          background: DOT_BG[status],
+          boxShadow: status === "mining" ? "0 0 6px hsl(140 80% 55% / 0.8)" : "none",
+        }}
+      />
+    </span>
+  );
+}
 
 export function MinerSwitcher() {
   const miners = useMiners((s) => s.miners);
@@ -15,38 +50,14 @@ export function MinerSwitcher() {
   const select = useMiners((s) => s.select);
   const scan = useMiners((s) => s.scan);
   const scanning = useMiners((s) => s.scanning);
+  const liveMode = useMiners((s) => s.liveMode);
 
   const current = miners.find((m) => m.id === selectedId) ?? miners[0];
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/70">
-        <span className="relative flex h-2 w-2 items-center justify-center">
-          <span
-            className="absolute inset-0 rounded-full blur-[2px]"
-            style={{
-              background:
-                current?.status === "mining"
-                  ? "hsl(140 80% 55% / 0.7)"
-                  : "transparent",
-            }}
-          />
-          <span
-            className="relative h-2 w-2 rounded-full"
-            style={{
-              background:
-                current?.status === "mining"
-                  ? "hsl(140 70% 50%)"
-                  : current?.status === "paused"
-                  ? "hsl(var(--muted-foreground))"
-                  : "hsl(var(--destructive))",
-              boxShadow:
-                current?.status === "mining"
-                  ? "0 0 6px hsl(140 80% 55% / 0.8)"
-                  : "none",
-            }}
-          />
-        </span>
+        {current && <StatusDot status={displayStatus(current, liveMode)} />}
         <span className="text-[11px] tracking-display uppercase">
           {current?.config.name ?? "—"}
         </span>
@@ -55,36 +66,39 @@ export function MinerSwitcher() {
         <DropdownMenuLabel className="text-[10px] tracking-display text-muted-foreground">
           Miners on LAN
         </DropdownMenuLabel>
-        {miners.map((m) => (
-          <DropdownMenuItem
-            key={m.id}
-            onClick={() => select(m.id)}
-            className="flex items-center justify-between gap-2"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <Circle
-                className={`h-2 w-2 shrink-0 ${
-                  m.status === "mining"
-                    ? "fill-accent text-accent"
-                    : m.status === "paused"
-                    ? "fill-muted-foreground text-muted-foreground"
-                    : "fill-destructive text-destructive"
-                }`}
-              />
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm truncate">{m.config.name}</span>
-                <span className="text-[10px] text-muted-foreground font-readout truncate">
-                  {m.ip} · {m.model}
-                </span>
+        {miners.map((m) => {
+          const status = displayStatus(m, liveMode);
+          const selected = m.id === selectedId;
+          return (
+            <DropdownMenuItem
+              key={m.id}
+              onClick={() => select(m.id)}
+              className="flex items-center justify-between gap-2"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <StatusDot status={status} />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm truncate flex items-center gap-1.5">
+                    {m.config.name}
+                    {selected && (
+                      <Check className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    )}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-readout truncate">
+                    {m.ip} · {m.model}
+                  </span>
+                </div>
               </div>
-            </div>
-            {m.id === selectedId && (
-              <span className="text-[10px] tracking-display text-muted-foreground">
-                ON
+              {/* Live per-miner state — NOT "selected". Every running miner
+                  reads ON regardless of which one is in view. */}
+              <span
+                className={`text-[10px] tracking-display ${LABEL_CLASS[status]}`}
+              >
+                {statusLabel(status)}
               </span>
-            )}
-          </DropdownMenuItem>
-        ))}
+            </DropdownMenuItem>
+          );
+        })}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={(e) => {

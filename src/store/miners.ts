@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Miner, MinerConfig } from "@/lib/types";
 import { fetchMinerStats, scanLAN, setMinerPaused } from "@/lib/minerApi";
+import { scaledTarget } from "@/lib/power";
 
 const STORAGE_KEY = "hashboard.state.v2";
 
@@ -188,25 +189,26 @@ export const useMiners = create<State>()(
           miners: s.miners.map((m) => {
             const entry = fetched.find((f) => f.id === m.id);
             const snap = entry?.snap;
-            if (!snap) return m;
+            // No response this poll → mark offline, keep last known values.
+            if (!snap) return { ...m, online: false };
             const live = snap.live;
-            // proxy scales machineTarget by (active boards / total boards); use directly.
-            // fall back to stored powerMax when gRPC is unavailable (no password yet).
-            const powerMax =
-              snap.machineTarget != null && snap.machineTarget > 0
-                ? snap.machineTarget
-                : m.config.powerMax;
-            const powerMin =
-              snap.machineMin != null && snap.machineMin > 0
-                ? Math.min(snap.machineMin, powerMax)
-                : m.config.powerMin;
-            const powerTarget = Math.min(
-              powerMax,
-              Math.max(powerMin, snap.machineTarget ?? m.config.powerTarget)
-            );
+            // The whole-machine power limit (e.g. 1718 W) exists ONLY to be
+            // divided across the boards — it is never shown as-is. Both the
+            // scale MAX and the Target are the active boards' share, rounded to
+            // 50 W: (limit / total) * active. 1718 W over 2 of 3 → 1150 W. The
+            // scale tops out exactly there — not one watt more.
+            const boards = snap.boards ?? m.boards;
+            const scaled =
+              snap.machineFull != null && snap.machineFull > 0 && boards
+                ? scaledTarget(snap.machineFull, boards.active, boards.total)
+                : m.config.powerTarget || 0; // no fresh data → keep last good
+            const powerMin = 0;
+            const powerMax = scaled;
+            const powerTarget = scaled;
             return {
               ...m,
-              boards: snap.boards ?? m.boards,
+              online: true,
+              boards,
               config: { ...m.config, powerMin, powerMax, powerTarget },
               live: {
                 th: live.th,
@@ -218,18 +220,8 @@ export const useMiners = create<State>()(
           }),
         }));
 
-        // If the visible miner is reachable but needs a password to read its
-        // power target, raise the same dialog used for control — once, unless
-        // the user dismissed it. (Wrong stored passwords re-prompt; dismissal
-        // stops the nag.)
-        const cur = get();
-        const selId = cur.selectedId ?? cur.miners[0]?.id ?? null;
-        if (selId && !cur.pwPrompt && !cur.pwDismissed[selId]) {
-          const entry = fetched.find((f) => f.id === selId);
-          if (entry?.snap?.needPassword) {
-            set({ pwPrompt: { minerId: selId, reason: "read" } });
-          }
-        }
+        // Reads use the open CGMiner API now — no password prompt for viewing.
+        // (The control flow still raises its own prompt for pause/resume.)
 
         const now = Date.now();
         set((s) => {
@@ -307,13 +299,14 @@ export const useMiners = create<State>()(
     {
       name: STORAGE_KEY,
       version: 1,
-      // v0→v1: power values and live readings now come exclusively from gRPC;
-      // reset any stale hardcoded seed data so the UI shows "connecting" on
-      // first load instead of wrong demo numbers from previous versions.
+      // v0→v1: power values and live readings now come from the miner on each
+      // poll; reset any stale hardcoded seed data so the UI shows "connecting"
+      // on first load instead of wrong demo numbers from previous versions.
       migrate: (persisted) => {
         const s = persisted as { miners?: Miner[]; selectedId?: string | null; theme?: "light" | "dark" };
         return {
-          ...s,
+          selectedId: s.selectedId ?? null,
+          theme: s.theme ?? "dark",
           miners: (s.miners ?? []).map((m) => ({
             ...m,
             config: {

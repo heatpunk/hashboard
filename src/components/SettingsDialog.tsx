@@ -94,8 +94,8 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
             </div>
             <p className="text-[10px] text-muted-foreground/70 leading-snug">
               {miner.boards
-                ? `${miner.boards.active} / ${miner.boards.total} hashboards active — limits scale to this`
-                : "Scaled to active hashboards"}
+                ? `${miner.boards.active} / ${miner.boards.total} hashboards active — Max = machine target ÷ ${miner.boards.total} × ${miner.boards.active}, to the nearest 50 W. Never higher.`
+                : "Scaled to the active hashboards"}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -109,12 +109,12 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Max (machine)</Label>
+                <Label className="text-[10px] text-muted-foreground">Max (active)</Label>
                 <Input
                   type="number"
                   value={miner.config.powerMax}
                   readOnly
-                  title="From the miner's configured target — can't be raised here"
+                  title="The machine target scaled to the active boards — never higher"
                   className="font-readout opacity-60 cursor-not-allowed"
                 />
               </div>

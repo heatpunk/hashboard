@@ -13,21 +13,20 @@ export interface DiscoveredMiner {
 
 export interface MinerSnapshot {
   live: MinerStats;
-  /** power target scaled to active boards (watts) — slider ceiling */
-  machineTarget: number | null;
-  /** Braiins floor scaled to active boards (watts) — slider min */
-  machineMin: number | null;
-  /** active vs total hashboards */
+  /** whole-machine power limit (watts); divided across the active boards to get
+   *  BOTH the scale max and the Target — never shown as-is */
+  machineFull: number | null;
+  /** active vs total hashboards — the share is active/total */
   boards: { active: number; total: number } | null;
-  /** miner is reachable but needs an API password to read its power target */
+  /** reserved for control flows; reads no longer require a password */
   needPassword: boolean;
 }
 
 export async function fetchMinerStats(ip: string, password?: string): Promise<MinerSnapshot | null> {
   try {
     const res = await fetch(`/api/miners/${encodeURIComponent(ip)}/stats`, {
-      // Password lets the proxy read the real power target via the Braiins
-      // gRPC API; without it the target/range fall back to cached values.
+      // Reads use the open CGMiner API (port 4028) — no password needed. The
+      // header is kept only so a future authenticated read could use it.
       headers: password ? { 'x-miner-password': password } : {},
       signal: AbortSignal.timeout(6500),
     });
@@ -36,8 +35,7 @@ export async function fetchMinerStats(ip: string, password?: string): Promise<Mi
     if (!data.ok) return null;
     return {
       live: data.live as MinerStats,
-      machineTarget: (data.config?.powerTarget ?? null) as number | null,
-      machineMin: (data.config?.powerMin ?? null) as number | null,
+      machineFull: (data.config?.fullTarget ?? null) as number | null,
       boards: (data.config?.boards ?? null) as { active: number; total: number } | null,
       needPassword: !!data.needPassword,
     };
