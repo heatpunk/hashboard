@@ -1,0 +1,49 @@
+name: Auto Release
+
+# Bygger en ny hashboard.s9pk automatiskt så fort versionen i
+# startos/versions/current.ts ändras på main. Då behöver ingen längre
+# trigga release.yml för hand efter en merge.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'startos/versions/current.ts'
+
+jobs:
+  detect:
+    name: Detect version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+      should_release: ${{ steps.read.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version & check tag
+        id: read
+        run: |
+          raw=$(grep -oP "version:\s*'\K[^']+" startos/versions/current.ts)
+          version="${raw%%:*}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$version" >/dev/null 2>&1; then
+            echo "Tag v$version already exists — skipping release."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New version v$version — releasing."
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    name: Build & release
+    needs: detect
+    if: needs.detect.outputs.should_release == 'true'
+    permissions:
+      contents: write
+      packages: write
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.detect.outputs.version }}
