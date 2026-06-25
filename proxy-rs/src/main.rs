@@ -18,7 +18,8 @@ use std::net::IpAddr;
 use std::str::FromStr;
 
 use asic_rs::MinerFactory;
-use asic_rs_core::data::miner::{TuningConfig, TuningTarget};
+use asic_rs_core::config::tuning::TuningConfig;
+use asic_rs_core::data::miner::TuningTarget;
 use axum::{
     Router,
     extract::{Path, Query, State},
