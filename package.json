@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "proxy": "node server/proxy.cjs",
+    "proxy": "cargo run --manifest-path proxy-rs/Cargo.toml",
     "dev": "vite",
-    "dev:full": "node server/proxy.cjs & vite",
+    "dev:full": "cargo run --manifest-path proxy-rs/Cargo.toml & vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
