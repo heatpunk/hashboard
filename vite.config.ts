@@ -12,7 +12,7 @@ export default defineConfig(() => ({
     hmr: {
       overlay: false,
     },
-    // Forward /api/* to the local CGMiner proxy (node server/proxy.cjs)
+    // Forward /api/* to the local Rust proxy (proxy-rs on :8081)
     proxy: {
       "/api": "http://127.0.0.1:8081",
     },

@@ -18,7 +18,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
       'hashboard-sub',
     ),
     exec: {
-      command: ['sh', '-c', 'node server/proxy.cjs & node server/serve.cjs'],
+      command: ['sh', '-c', 'proxy-rs & node server/serve.cjs'],
     },
     ready: {
       display: i18n('Web Interface'),
