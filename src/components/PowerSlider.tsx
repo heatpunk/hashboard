@@ -5,12 +5,13 @@ interface Props {
   max: number;
   value: number;
   onChange: (v: number) => void;
+  onCommit?: (v: number) => void;
   disabled?: boolean;
 }
 
 /** Vertical, stepless power slider. The gradient background is always shown;
  *  the handle is a thin, exclusive line that glides with the pointer. */
-export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
+export function PowerSlider({ min, max, value, onChange, onCommit, disabled }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -35,7 +36,10 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
       e.preventDefault();
       update(e.clientY);
     };
-    const up = () => setDragging(false);
+    const up = () => {
+      setDragging(false);
+      onCommit?.(value);
+    };
     window.addEventListener("pointermove", move, { passive: false });
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
@@ -44,7 +48,7 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", up);
     };
-  }, [dragging, update]);
+  }, [dragging, update, onCommit, value]);
 
   return (
     <div className="flex h-full w-full items-center justify-center select-none">
@@ -68,8 +72,16 @@ export function PowerSlider({ min, max, value, onChange, disabled }: Props) {
         onKeyDown={(e) => {
           if (disabled) return;
           const step = (max - min) / 200;
-          if (e.key === "ArrowUp") onChange(Math.min(max, value + step));
-          if (e.key === "ArrowDown") onChange(Math.max(min, value - step));
+          if (e.key === "ArrowUp") {
+            const next = Math.min(max, value + step);
+            onChange(next);
+            onCommit?.(next);
+          }
+          if (e.key === "ArrowDown") {
+            const next = Math.max(min, value - step);
+            onChange(next);
+            onCommit?.(next);
+          }
         }}
       >
         {/* Full gradient — always visible, softly dimmed */}

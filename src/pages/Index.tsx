@@ -6,12 +6,14 @@ import { MinerSwitcher } from "@/components/MinerSwitcher";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { PasswordDialog } from "@/components/PasswordDialog";
 import { axisLabels } from "@/lib/axis";
+import { scaledTarget } from "@/lib/power";
 import { Settings, Pause, Play } from "lucide-react";
 
 const Index = () => {
   const miners = useMiners((s) => s.miners);
   const selectedId = useMiners((s) => s.selectedId);
   const setPower = useMiners((s) => s.setPower);
+  const commitPowerTarget = useMiners((s) => s.commitPowerTarget);
   const togglePause = useMiners((s) => s.togglePause);
   const tick = useMiners((s) => s._tick);
   const pollLive = useMiners((s) => s.pollLive);
@@ -66,7 +68,15 @@ const Index = () => {
       : "—";
   const intent = intents[miner.id];
   const paused = intent ? intent.paused : liveMode ? miner.live.th <= 0.5 : miner.status === "paused";
-  const axis = axisLabels(miner.config.powerMin, miner.config.powerMax);
+  const ba = miner.boards?.active ?? 1;
+  const bt = miner.boards?.total ?? 1;
+  const axis = axisLabels(
+    scaledTarget(miner.config.powerMin, ba, bt),
+    scaledTarget(miner.config.powerMax, ba, bt),
+  );
+  const displayTarget = miner.boards
+    ? scaledTarget(miner.config.powerTarget, miner.boards.active, miner.boards.total)
+    : miner.config.powerTarget;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -102,6 +112,7 @@ const Index = () => {
                   max={miner.config.powerMax}
                   value={miner.config.powerTarget}
                   onChange={(v) => setPower(miner.id, v)}
+                  onCommit={() => commitPowerTarget(miner.id)}
                   disabled={paused}
                 />
               ) : (
@@ -116,7 +127,7 @@ const Index = () => {
               Target
             </span>
             <span className="font-readout text-xl sm:text-2xl font-light leading-none mt-1.5 tabular-nums">
-              {miner.config.powerMax > 0 ? Math.round(miner.config.powerTarget) : "—"}
+              {miner.config.powerMax > 0 ? Math.round(displayTarget) : "—"}
             </span>
             <span className="text-[9px] tracking-display text-muted-foreground/60 mt-1">
               watt

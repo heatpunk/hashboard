@@ -30,6 +30,23 @@ asic-rs may not report a power limit. In that case `fullTarget` will be `null` a
 UI slider will have no ceiling. This is the same behaviour as the old proxy in that case
 (`ts.PowerLimit` was also null for unconfigured miners).
 
+## Set power target (Issue #36)
+
+`POST /api/miners/{ip}/power` — Sets the miner's whole-machine power target.
+
+**Request body:** `{"watts": <positive integer>, "password": "<optional>"}`
+
+**Flow:**
+1. Validate host format.
+2. `MinerFactory::get_miner(ip)` to discover the miner.
+3. `miner.supports_tuning_config()` — if false, return `502 {"ok": false, "error": "..."}`.
+4. `miner.set_tuning_config(TuningConfig::new(TuningTarget::from_watts(watts)), None).await`.
+5. Auth errors (denied/unauthorized/password) → `401 {"ok": false, "needPassword": true, "error": "..."}`.
+6. Success → `200 {"ok": true}`.
+7. Other errors → `502 {"ok": false, "error": "..."}`.
+
+**Note:** `watts` is the whole-machine value (all boards). The UI divides this by active/total boards to display the per-active-board share.
+
 ## Pause / resume decision (Issue #31)
 
 **Choice: option 1 — native `pause()`/`resume()` from asic-rs.**

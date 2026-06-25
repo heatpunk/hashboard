@@ -8,6 +8,7 @@
 //!   GET  /api/miners/{ip}/stats
 //!   POST /api/miners/{ip}/pause
 //!   POST /api/miners/{ip}/resume
+//!   POST /api/miners/{ip}/power
 //!   GET  /api/miners/{ip}/rawdata
 //!   GET  /api/scan?subnet=192.168.1
 
@@ -17,6 +18,7 @@ use std::net::IpAddr;
 use std::str::FromStr;
 
 use asic_rs::MinerFactory;
+use asic_rs_core::data::miner::{TuningConfig, TuningTarget};
 use axum::{
     Router,
     extract::{Path, Query, State},
@@ -235,6 +237,85 @@ fn is_auth_error(msg: &str) -> bool {
 }
 
 // ---------------------------------------------------------------------------
+// Route: POST /api/miners/{ip}/power
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize, Default)]
+struct PowerBody {
+    watts: i64,
+    #[serde(default)]
+    password: String,
+}
+
+async fn miner_set_power(
+    State(state): State<AppState>,
+    Path(ip): Path<String>,
+    body: Option<axum::extract::Json<PowerBody>>,
+) -> Response {
+    if !state.host_re.is_match(&ip) {
+        return bad_request("bad host");
+    }
+
+    let addr = match IpAddr::from_str(&ip) {
+        Ok(a) => a,
+        Err(_) => return bad_request("invalid IP address"),
+    };
+
+    let body = match body {
+        Some(b) => b.0,
+        None => return bad_request("missing body with {\"watts\": N}"),
+    };
+
+    if body.watts <= 0 {
+        return bad_request("watts must be positive");
+    }
+
+    let _password = body.password;
+
+    let factory = MinerFactory::new();
+    let miner = match factory.get_miner(addr).await {
+        Ok(Some(m)) => m,
+        Ok(None) => {
+            return json_response(
+                StatusCode::BAD_GATEWAY,
+                &json!({ "ok": false, "needPassword": false, "error": "miner not found or not supported" }),
+            );
+        }
+        Err(e) => {
+            return json_response(
+                StatusCode::BAD_GATEWAY,
+                &json!({ "ok": false, "error": format!("discovery error: {e}") }),
+            );
+        }
+    };
+
+    if !miner.supports_tuning_config() {
+        return json_response(
+            StatusCode::BAD_GATEWAY,
+            &json!({ "ok": false, "error": "power tuning not supported by this firmware" }),
+        );
+    }
+
+    let config = TuningConfig::new(TuningTarget::from_watts(body.watts as f64));
+    match miner.set_tuning_config(config, None).await {
+        Ok(_) => ok_json(&json!({ "ok": true })),
+        Err(e) => {
+            let msg = e.to_string();
+            let denied = is_auth_error(&msg);
+            let status = if denied {
+                StatusCode::UNAUTHORIZED
+            } else {
+                StatusCode::BAD_GATEWAY
+            };
+            json_response(
+                status,
+                &json!({ "ok": false, "needPassword": denied, "error": msg }),
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Route: GET /api/miners/{ip}/rawdata
 // ---------------------------------------------------------------------------
 
@@ -316,6 +397,7 @@ pub fn build_router() -> Router {
         .route("/api/miners/{ip}/stats", get(miner_stats))
         .route("/api/miners/{ip}/pause", post(miner_pause))
         .route("/api/miners/{ip}/resume", post(miner_resume))
+        .route("/api/miners/{ip}/power", post(miner_set_power))
         .route("/api/miners/{ip}/rawdata", get(miner_rawdata))
         .route("/api/scan", get(scan_lan))
         .layer(cors)
@@ -481,6 +563,38 @@ mod tests {
         assert!(is_auth_error("permission denied"));
         assert!(!is_auth_error("timeout"));
         assert!(!is_auth_error("connection refused"));
+    }
+
+    #[tokio::test]
+    async fn test_power_unreachable_ip_returns_502() {
+        let app = build_router();
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/miners/192.0.2.4/power")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"watts":3200}"#))
+            .unwrap();
+        let resp = call(app, req).await;
+        assert_eq!(resp.status(), StatusCode::BAD_GATEWAY);
+        let json = body_json(resp).await;
+        assert_eq!(json["ok"], false);
+    }
+
+    #[tokio::test]
+    async fn test_power_missing_body_returns_400() {
+        let app = build_router();
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/miners/192.0.2.5/power")
+            .header("content-type", "application/json")
+            .body(Body::empty())
+            .unwrap();
+        let resp = call(app, req).await;
+        // No body → 400 bad request (missing body check)
+        assert!(
+            resp.status() == StatusCode::BAD_REQUEST
+                || resp.status() == StatusCode::UNPROCESSABLE_ENTITY
+        );
     }
 
     #[test]

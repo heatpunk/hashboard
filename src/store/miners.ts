@@ -1,8 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Miner, MinerConfig } from "@/lib/types";
-import { fetchMinerStats, scanLAN, setMinerPaused } from "@/lib/minerApi";
-import { scaledTarget } from "@/lib/power";
+import { fetchMinerStats, scanLAN, setMinerPaused, setMinerPowerTarget } from "@/lib/minerApi";
 
 const STORAGE_KEY = "hashboard.state.v2";
 
@@ -15,9 +14,10 @@ interface State {
   scanning: boolean;
   /** true when at least one miner responded with real data on last poll */
   liveMode: boolean;
-  /** miner awaiting an API password — for control (pause/resume) or just to
-   *  read the power target. `paused` only applies to control prompts. */
-  pwPrompt: { minerId: string; reason: "control" | "read"; paused?: boolean } | null;
+  /** miner awaiting an API password — for control (pause/resume), reading the
+   *  power target, or committing a new power target. `paused` only applies to
+   *  control prompts. */
+  pwPrompt: { minerId: string; reason: "control" | "read" | "power"; paused?: boolean } | null;
   /** miners whose password prompt the user dismissed this session — don't nag */
   pwDismissed: Record<string, boolean>;
   /** optimistic pause/resume per miner for instant button feedback */
@@ -27,6 +27,7 @@ interface State {
   setTheme: (t: "light" | "dark") => void;
   toggleTheme: () => void;
   setPower: (id: string, watts: number) => void;
+  commitPowerTarget: (id: string) => Promise<void>;
   updateConfig: (id: string, patch: Partial<MinerConfig>) => void;
   updateIp: (id: string, ip: string) => void;
   togglePause: (id: string) => Promise<void>;
@@ -73,6 +74,15 @@ export const useMiners = create<State>()(
               : m
           ),
         })),
+
+      commitPowerTarget: async (id) => {
+        const m = get().miners.find((x) => x.id === id);
+        if (!m || m.config.powerTarget <= 0) return;
+        const res = await setMinerPowerTarget(m.ip, m.config.powerTarget, m.config.apiPassword);
+        if (res.needPassword) {
+          set({ pwPrompt: { minerId: id, reason: "power" } });
+        }
+      },
 
       updateConfig: (id, patch) =>
         set((s) => ({
@@ -136,6 +146,12 @@ export const useMiners = create<State>()(
           return;
         }
 
+        // "power": password needed to commit power target — retry now.
+        if (reason === "power") {
+          await get().commitPowerTarget(minerId);
+          return;
+        }
+
         // "control": also apply the intended pause/resume.
         set((s) => ({
           intents: { ...s.intents, [minerId]: { paused: !!paused, until: Date.now() + 20000 } },
@@ -192,24 +208,19 @@ export const useMiners = create<State>()(
             // No response this poll → mark offline, keep last known values.
             if (!snap) return { ...m, online: false };
             const live = snap.live;
-            // The whole-machine power limit (e.g. 1718 W) exists ONLY to be
-            // divided across the boards — it is never shown as-is. Both the
-            // scale MAX and the Target are the active boards' share, rounded to
-            // 50 W: (limit / total) * active. 1718 W over 2 of 3 → 1150 W. The
-            // scale tops out exactly there — not one watt more.
             const boards = snap.boards ?? m.boards;
-            const scaled =
-              snap.machineFull != null && snap.machineFull > 0 && boards
-                ? scaledTarget(snap.machineFull, boards.active, boards.total)
-                : m.config.powerTarget || 0; // no fresh data → keep last good
-            const powerMin = 0;
-            const powerMax = scaled;
-            const powerTarget = scaled;
+            // Capture the whole-machine power ceiling ONCE at first connection
+            // and freeze it — subsequent polls must not overwrite it.
+            const captured = m.config.powerMax > 0;
+            const configPatch =
+              !captured && snap.machineFull != null && snap.machineFull > 0
+                ? { powerMin: 0, powerMax: snap.machineFull, powerTarget: snap.machineFull }
+                : {};
             return {
               ...m,
               online: true,
               boards,
-              config: { ...m.config, powerMin, powerMax, powerTarget },
+              config: { ...m.config, ...configPatch },
               live: {
                 th: live.th,
                 watts: live.watts ?? m.live.watts,
@@ -298,10 +309,11 @@ export const useMiners = create<State>()(
     }),
     {
       name: STORAGE_KEY,
-      version: 1,
-      // v0→v1: power values and live readings now come from the miner on each
-      // poll; reset any stale hardcoded seed data so the UI shows "connecting"
-      // on first load instead of wrong demo numbers from previous versions.
+      version: 2,
+      // v0→v1: power values and live readings now come from the miner on each poll.
+      // v1→v2: powerMin/powerMax/powerTarget now store whole-machine watts (not
+      //   scaled per active boards); reset to 0 so the ceiling is re-captured
+      //   on next poll with the new semantics.
       migrate: (persisted) => {
         const s = persisted as { miners?: Miner[]; selectedId?: string | null; theme?: "light" | "dark" };
         return {
