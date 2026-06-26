@@ -1,15 +1,14 @@
 name: Test build (s9pk artifact)
 
 # Builds a sideloadable hashboard.s9pk and uploads it as a workflow ARTIFACT —
-# no public GitHub Release, no git tag. For testing a branch before merge.
-# Download the artifact from this run's summary page, unzip, and sideload in StartOS.
+# no public GitHub Release, no git tag. For testing this branch before merge.
+# Download the artifact from the run's summary page, unzip, sideload in StartOS.
+# The version is read from startos/manifest (the dockerTag), so it always matches.
 
 on:
+  push:
+    branches: [claude/asic-rs-proxy]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version (e.g. 0.4.1) — must match startos/manifest dockerTag'
-        required: true
 
 env:
   REGISTRY: ghcr.io
@@ -22,8 +21,17 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve version from manifest
+        id: ver
+        run: |
+          v=$(grep -oP "hashboard:\K[0-9]+\.[0-9]+\.[0-9]+" startos/manifest/index.ts | head -1)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Building version $v"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -31,14 +39,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ github.event.inputs.version }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -52,8 +52,7 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -107,7 +106,7 @@ jobs:
       - name: Upload s9pk artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hashboard-${{ github.event.inputs.version }}-s9pk
+          name: hashboard-${{ needs.docker.outputs.version }}-s9pk
           path: hashboard.s9pk
           retention-days: 14
           if-no-files-found: error
