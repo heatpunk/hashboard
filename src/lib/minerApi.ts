@@ -46,6 +46,21 @@ export async function fetchMinerStats(ip: string, password?: string): Promise<Mi
 
 export interface ControlResult { ok: boolean; needPassword?: boolean }
 
+export async function setMinerPowerTarget(ip: string, watts: number, password?: string): Promise<ControlResult> {
+  try {
+    const res = await fetch(`/api/miners/${encodeURIComponent(ip)}/power`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ watts: Math.round(watts), password: password ?? '' }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: !!data.ok, needPassword: !!data.needPassword };
+  } catch {
+    return { ok: false };
+  }
+}
+
 export async function setMinerPaused(ip: string, paused: boolean, password?: string): Promise<ControlResult> {
   try {
     const res = await fetch(`/api/miners/${encodeURIComponent(ip)}/${paused ? 'pause' : 'resume'}`, {

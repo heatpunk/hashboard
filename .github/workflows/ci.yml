@@ -35,3 +35,29 @@ jobs:
 
       - run: npm --prefix sdk-build ci
       - run: cd sdk-build && npm run check
+
+  proxy-rs:
+    name: Build & test proxy-rs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: proxy-rs
+
+      - name: cargo build
+        working-directory: proxy-rs
+        run: cargo build --verbose
+
+      - name: cargo test
+        working-directory: proxy-rs
+        run: cargo test --verbose
+
+      - name: cargo clippy
+        working-directory: proxy-rs
+        run: cargo clippy --all-targets -- -D warnings
