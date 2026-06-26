@@ -93,7 +93,7 @@ const Index = () => {
       {/* Slider area */}
       <section className="flex-1 flex items-center justify-center px-4 sm:px-8 py-4 min-h-0">
         <div className="flex items-stretch gap-4 sm:gap-8 w-full max-w-2xl mx-auto h-[50vh]">
-          <div className="w-14 sm:w-16 flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums">
+          <div className="flex flex-col justify-between py-1 font-readout text-[10px] text-muted-foreground tabular-nums" style={{ width: 78 }}>
             {miner.config.powerMax > 0 ? (
               <>
                 <span>{axis.top}</span>
@@ -122,7 +122,7 @@ const Index = () => {
               )}
             </div>
           </div>
-          <div className="w-14 sm:w-16 flex flex-col items-end justify-center">
+          <div className="flex flex-col items-end justify-center" style={{ width: 78 }}>
             <span className="text-[9px] tracking-display text-muted-foreground/70">
               Target
             </span>
