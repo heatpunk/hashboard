@@ -29,6 +29,7 @@ use axum::{
 };
 use futures::StreamExt;
 use map::{map_miner_data, map_scan_entry};
+use measurements::Power;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -290,30 +291,53 @@ async fn miner_set_power(
         }
     };
 
-    if !miner.supports_tuning_config() {
-        return json_response(
-            StatusCode::BAD_GATEWAY,
-            &json!({ "ok": false, "error": "power tuning not supported by this firmware" }),
-        );
+    // BraiinsOS+ v26.04+ (including v26.06) returns false from supports_tuning_config()
+    // and uses a dedicated power-limit endpoint instead. Try that as fallback.
+    if miner.supports_tuning_config() {
+        let config = TuningConfig::new(TuningTarget::from_watts(body.watts as f64));
+        return match miner.set_tuning_config(config, None).await {
+            Ok(_) => ok_json(&json!({ "ok": true })),
+            Err(e) => {
+                let msg = e.to_string();
+                let denied = is_auth_error(&msg);
+                let status = if denied {
+                    StatusCode::UNAUTHORIZED
+                } else {
+                    StatusCode::BAD_GATEWAY
+                };
+                json_response(
+                    status,
+                    &json!({ "ok": false, "needPassword": denied, "error": msg }),
+                )
+            }
+        };
     }
 
-    let config = TuningConfig::new(TuningTarget::from_watts(body.watts as f64));
-    match miner.set_tuning_config(config, None).await {
-        Ok(_) => ok_json(&json!({ "ok": true })),
-        Err(e) => {
-            let msg = e.to_string();
-            let denied = is_auth_error(&msg);
-            let status = if denied {
-                StatusCode::UNAUTHORIZED
-            } else {
-                StatusCode::BAD_GATEWAY
-            };
-            json_response(
-                status,
-                &json!({ "ok": false, "needPassword": denied, "error": msg }),
-            )
-        }
+    if miner.supports_set_power_limit() {
+        let power = Power::from_watts(body.watts as f64);
+        return match miner.set_power_limit(power).await {
+            Ok(true) => ok_json(&json!({ "ok": true })),
+            Ok(false) => bad_gateway("firmware rejected power-limit change"),
+            Err(e) => {
+                let msg = e.to_string();
+                let denied = is_auth_error(&msg);
+                let status = if denied {
+                    StatusCode::UNAUTHORIZED
+                } else {
+                    StatusCode::BAD_GATEWAY
+                };
+                json_response(
+                    status,
+                    &json!({ "ok": false, "needPassword": denied, "error": msg }),
+                )
+            }
+        };
     }
+
+    json_response(
+        StatusCode::BAD_GATEWAY,
+        &json!({ "ok": false, "error": "power tuning not supported by this firmware" }),
+    )
 }
 
 // ---------------------------------------------------------------------------
