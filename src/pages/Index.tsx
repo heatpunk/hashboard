@@ -7,8 +7,6 @@ import { SettingsDialog } from "@/components/SettingsDialog";
 import { PasswordDialog } from "@/components/PasswordDialog";
 import { axisLabels } from "@/lib/axis";
 import { scaledTarget } from "@/lib/power";
-import glassLeft from "@/assets/glass-button-left.png";
-import glassRight from "@/assets/glass-button-right.png";
 
 const frost = {
   filter:
@@ -52,7 +50,7 @@ const Index = () => {
 
   if (!miner) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center gap-6 px-8">
+      <div className="min-h-screen text-foreground flex flex-col items-center justify-center gap-6 px-8">
         <h1
           className="text-sm font-light uppercase text-muted-foreground/80"
           style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
@@ -86,7 +84,7 @@ const Index = () => {
     : miner.config.powerTarget;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen text-foreground flex flex-col">
       {/* Live readouts */}
       <header className="px-4 sm:px-8 pt-2 pb-0 shrink-0">
         <div className="flex items-center justify-center flex-wrap gap-x-5 gap-y-0 max-w-3xl mx-auto opacity-70">
@@ -155,19 +153,20 @@ const Index = () => {
           <button
             onClick={() => { try { navigator.vibrate?.(15); } catch (e) {} togglePause(miner.id); }}
             aria-label={paused ? "Resume mining" : "Pause mining"}
-            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full flex items-center justify-center hover:brightness-125 transition-all active:scale-90"
-            style={{ backgroundImage: `url(${glassLeft})`, backgroundSize: "cover", backgroundPosition: "center" }}
+            className="pointer-events-auto justify-self-start relative overflow-hidden h-11 w-11 rounded-full flex items-center justify-center transition-all active:scale-90 hover:brightness-110"
+            style={{ boxShadow: "0 4px 10px -4px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.5), inset 0 1.5px 2px -1px rgba(255,255,255,0.85), inset 0 -5px 8px -5px rgba(255,255,255,0.22)" }}
           >
-            {paused ? (
-              <svg viewBox="0 0 44 44" className="h-11 w-11" style={frost} aria-hidden="true">
-                <polygon points="17.8,15.6 28.4,22 17.8,28.4" fill="#eef2f8" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 44 44" className="h-11 w-11" style={frost} aria-hidden="true">
-                <rect x="18.5" y="15.6" width="2.4" height="12.8" rx="1.1" fill="#eef2f8" />
-                <rect x="23.1" y="15.6" width="2.4" height="12.8" rx="1.1" fill="#eef2f8" />
-              </svg>
-            )}
+            <svg viewBox="0 0 44 44" className="h-11 w-11 text-foreground" style={frost} aria-hidden="true">
+              {paused ? (
+                <polygon points="17.8,15.6 28.4,22 17.8,28.4" fill="currentColor" />
+              ) : (
+                <>
+                  <rect x="18.5" y="15.6" width="2.4" height="12.8" rx="1.1" fill="currentColor" />
+                  <rect x="23.1" y="15.6" width="2.4" height="12.8" rx="1.1" fill="currentColor" />
+                </>
+              )}
+            </svg>
+            <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full" style={{ background: "radial-gradient(ellipse 62% 40% at 44% 22%, rgba(255,255,255,0.7), transparent 60%)", mixBlendMode: "screen" }} />
           </button>
           <div className="pointer-events-auto justify-self-center">
             <MinerSwitcher />
@@ -175,12 +174,11 @@ const Index = () => {
           <button
             onClick={() => setSettingsOpen(true)}
             aria-label="Settings"
-            className="pointer-events-auto justify-self-end h-11 w-11 rounded-full flex items-center justify-center hover:brightness-125 transition-all active:scale-90"
-            style={{ backgroundImage: `url(${glassRight})`, backgroundSize: "cover", backgroundPosition: "center" }}
+            className="pointer-events-auto justify-self-end relative overflow-hidden h-11 w-11 rounded-full flex items-center justify-center transition-all active:scale-90 hover:brightness-110"
+            style={{ boxShadow: "0 4px 10px -4px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.5), inset 0 1.5px 2px -1px rgba(255,255,255,0.85), inset 0 -5px 8px -5px rgba(255,255,255,0.22)" }}
           >
-            <svg viewBox="0 0 44 44" className="h-11 w-11" style={frost} aria-hidden="true">
-              <g fill="#eef2f8">
-                <circle cx="22" cy="22" r="4.4" />
+            <svg viewBox="0 0 44 44" className="h-11 w-11 text-foreground" style={frost} aria-hidden="true">
+              <g fill="currentColor">
                 <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(0 22 22)" />
                 <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(45 22 22)" />
                 <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(90 22 22)" />
@@ -189,9 +187,10 @@ const Index = () => {
                 <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(225 22 22)" />
                 <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(270 22 22)" />
                 <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(315 22 22)" />
+                <path fillRule="evenodd" d="M17.6,22 a4.4,4.4 0 1 0 8.8,0 a4.4,4.4 0 1 0 -8.8,0 Z M20.24,22 a1.76,1.76 0 1 0 3.52,0 a1.76,1.76 0 1 0 -3.52,0 Z" />
               </g>
-              <circle cx="22" cy="22" r="1.76" fill="#0c0d0f" />
             </svg>
+            <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full" style={{ background: "radial-gradient(ellipse 62% 40% at 44% 22%, rgba(255,255,255,0.7), transparent 60%)", mixBlendMode: "screen" }} />
           </button>
         </div>
       </footer>
