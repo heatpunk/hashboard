@@ -20,7 +20,6 @@ use std::str::FromStr;
 use asic_rs::MinerFactory;
 use asic_rs_core::config::tuning::TuningConfig;
 use asic_rs_core::data::miner::TuningTarget;
-use asic_rs_core::traits::miner::SetPowerLimit;
 use axum::{
     Router,
     extract::{Path, Query, State},
