@@ -39,11 +39,13 @@ UI slider will have no ceiling. This is the same behaviour as the old proxy in t
 **Flow:**
 1. Validate host format.
 2. `MinerFactory::get_miner(ip)` to discover the miner.
-3. `miner.supports_tuning_config()` — if false, return `502 {"ok": false, "error": "..."}`.
-4. `miner.set_tuning_config(TuningConfig::new(TuningTarget::from_watts(watts)), None).await`.
-5. Auth errors (denied/unauthorized/password) → `401 {"ok": false, "needPassword": true, "error": "..."}`.
-6. Success → `200 {"ok": true}`.
-7. Other errors → `502 {"ok": false, "error": "..."}`.
+3. If `miner.supports_tuning_config()`: call `set_tuning_config(TuningConfig::new(TuningTarget::from_watts(watts)), None)`.
+4. Else if `miner.supports_set_power_limit()`: call `set_power_limit(Power::from_watts(watts))`.
+   - BraiinsOS+ v26.04+ (including v26.06) takes this path — it exposes `PUT /api/v1/performance/power-target` and does NOT implement `set_tuning_config`.
+5. Else: return `502 {"ok": false, "error": "power tuning not supported by this firmware"}`.
+6. Auth errors (denied/unauthorized/password) → `401 {"ok": false, "needPassword": true, "error": "..."}`.
+7. Success → `200 {"ok": true}`.
+8. Other errors → `502 {"ok": false, "error": "..."}`.
 
 **Note:** `watts` is the whole-machine value (all boards). The UI divides this by active/total boards to display the per-active-board share.
 
