@@ -3,7 +3,9 @@
 > A dead-simple UI for running a Bitcoin ASIC miner as a space heater — built so anyone in the house can use it.
 
 <p align="center">
-  <img src="docs/screenshots/hero.png" alt="Hashboard — the power slider" width="320">
+  <img src="docs/screenshots/hero.png" alt="Hashboard — dark mode" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/pearl.png" alt="Hashboard — Pearl (light) mode" width="300">
 </p>
 
 Hashboard turns an ASIC miner into an ordinary appliance: open it on your phone, see how much heat it's making, and slide it up or down. No mining knowledge required. It's made for the people you share a home with — your partner, your kids, a friend — not for the person who set the miner up.
