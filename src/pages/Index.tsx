@@ -179,15 +179,15 @@ const Index = () => {
           >
             <svg viewBox="0 0 44 44" className="h-11 w-11 text-foreground" style={frost} aria-hidden="true">
               <g fill="currentColor">
-                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(0 22 22)" />
-                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(45 22 22)" />
-                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(90 22 22)" />
-                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(135 22 22)" />
-                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(180 22 22)" />
-                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(225 22 22)" />
-                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(270 22 22)" />
-                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(315 22 22)" />
-                <path fillRule="evenodd" d="M17.6,22 a4.4,4.4 0 1 0 8.8,0 a4.4,4.4 0 1 0 -8.8,0 Z M20.24,22 a1.76,1.76 0 1 0 3.52,0 a1.76,1.76 0 1 0 -3.52,0 Z" />
+                <rect x="20.3" y="15" width="3.4" height="2.6" rx="0.6" transform="rotate(0 22 22)" />
+                <rect x="20.3" y="15" width="3.4" height="2.6" rx="0.6" transform="rotate(45 22 22)" />
+                <rect x="20.3" y="15" width="3.4" height="2.6" rx="0.6" transform="rotate(90 22 22)" />
+                <rect x="20.3" y="15" width="3.4" height="2.6" rx="0.6" transform="rotate(135 22 22)" />
+                <rect x="20.3" y="15" width="3.4" height="2.6" rx="0.6" transform="rotate(180 22 22)" />
+                <rect x="20.3" y="15" width="3.4" height="2.6" rx="0.6" transform="rotate(225 22 22)" />
+                <rect x="20.3" y="15" width="3.4" height="2.6" rx="0.6" transform="rotate(270 22 22)" />
+                <rect x="20.3" y="15" width="3.4" height="2.6" rx="0.6" transform="rotate(315 22 22)" />
+                <path fillRule="evenodd" d="M16.6,22 a5.4,5.4 0 1 0 10.8,0 a5.4,5.4 0 1 0 -10.8,0 Z M20.3,22 a1.7,1.7 0 1 0 3.4,0 a1.7,1.7 0 1 0 -3.4,0 Z" />
               </g>
             </svg>
             <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full" style={{ background: "radial-gradient(ellipse 62% 40% at 44% 22%, rgba(255,255,255,0.7), transparent 60%)", mixBlendMode: "screen" }} />

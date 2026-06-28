@@ -214,7 +214,7 @@ export const useMiners = create<State>()(
             const captured = m.config.powerMax > 0;
             const configPatch =
               !captured && snap.machineFull != null && snap.machineFull > 0
-                ? { powerMin: 0, powerMax: snap.machineFull, powerTarget: snap.machineFull }
+                ? { powerMin: snap.powerMin != null && snap.powerMin > 0 ? snap.powerMin : Math.round(snap.machineFull / 3), powerMax: snap.machineFull, powerTarget: snap.machineFull }
                 : {};
             return {
               ...m,

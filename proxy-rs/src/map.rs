@@ -132,6 +132,22 @@ fn full_power_target(data: &MinerData) -> Option<f64> {
     None
 }
 
+/// Whole-machine minimum allowed power target in watts, from
+/// `tuning_capabilities.power.minimum` (the firmware-reported floor).
+/// Returns None when the firmware backend does not expose it.
+fn min_power_target(data: &MinerData) -> Option<f64> {
+    if let Some(caps) = &data.tuning_capabilities
+        && let Some(power_caps) = &caps.power
+        && let Some(TuningTarget::Power(p)) = &power_caps.minimum
+    {
+        let w = p.as_watts();
+        if w > 0.0 {
+            return Some(w);
+        }
+    }
+    None
+}
+
 // ---------------------------------------------------------------------------
 // Main mapping function
 // ---------------------------------------------------------------------------
@@ -245,8 +261,9 @@ pub fn map_miner_data(data: &MinerData) -> StatsResponse {
         Some(BoardsInfo { active, total })
     };
 
-    // --- config.fullTarget ---
+    // --- config.fullTarget / powerMin ---
     let full_target = full_power_target(data);
+    let power_min = min_power_target(data);
 
     StatsResponse {
         ok: true,
@@ -258,7 +275,7 @@ pub fn map_miner_data(data: &MinerData) -> StatsResponse {
         },
         config: ConfigInfo {
             full_target,
-            power_min: None,
+            power_min,
             boards,
         },
         model,

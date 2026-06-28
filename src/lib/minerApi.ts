@@ -16,6 +16,8 @@ export interface MinerSnapshot {
   /** whole-machine power limit (watts); divided across the active boards to get
    *  BOTH the scale max and the Target — never shown as-is */
   machineFull: number | null;
+  /** whole-machine minimum allowed power target (watts), firmware floor; null when not exposed */
+  powerMin: number | null;
   /** active vs total hashboards — the share is active/total */
   boards: { active: number; total: number } | null;
   /** reserved for control flows; reads no longer require a password */
@@ -36,6 +38,7 @@ export async function fetchMinerStats(ip: string, password?: string): Promise<Mi
     return {
       live: data.live as MinerStats,
       machineFull: (data.config?.fullTarget ?? null) as number | null,
+      powerMin: (data.config?.powerMin ?? null) as number | null,
       boards: (data.config?.boards ?? null) as { active: number; total: number } | null,
       needPassword: !!data.needPassword,
     };
