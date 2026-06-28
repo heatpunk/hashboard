@@ -126,10 +126,10 @@ export function SettingsDialog({ open, onOpenChange, minerId }: Props) {
           {/* Theme */}
           <div className="flex items-center justify-between">
             <Label className="text-[10px] tracking-display text-muted-foreground">
-              Dark mode
+              Pearl mode
             </Label>
             <Switch
-              checked={theme === "dark"}
+              checked={theme === "light"}
               onCheckedChange={() => toggleTheme()}
             />
           </div>
