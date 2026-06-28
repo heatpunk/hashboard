@@ -7,7 +7,14 @@ import { SettingsDialog } from "@/components/SettingsDialog";
 import { PasswordDialog } from "@/components/PasswordDialog";
 import { axisLabels } from "@/lib/axis";
 import { scaledTarget } from "@/lib/power";
-import { Settings, Pause, Play } from "lucide-react";
+import glassLeft from "@/assets/glass-button-left.png";
+import glassRight from "@/assets/glass-button-right.png";
+
+const frost = {
+  filter:
+    "blur(0.2px) drop-shadow(0 0.5px 0.5px rgba(0,0,0,0.5)) drop-shadow(0 0 1.5px rgba(255,255,255,0.25))",
+  opacity: 0.92,
+};
 
 const Index = () => {
   const miners = useMiners((s) => s.miners);
@@ -148,13 +155,18 @@ const Index = () => {
           <button
             onClick={() => { try { navigator.vibrate?.(15); } catch (e) {} togglePause(miner.id); }}
             aria-label={paused ? "Resume mining" : "Pause mining"}
-            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full border border-border backdrop-blur flex items-center justify-center hover:bg-secondary transition-all active:scale-90"
-            style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
+            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full flex items-center justify-center hover:brightness-125 transition-all active:scale-90"
+            style={{ backgroundImage: `url(${glassLeft})`, backgroundSize: "cover", backgroundPosition: "center" }}
           >
             {paused ? (
-              <Play className="h-4 w-4" />
+              <svg viewBox="0 0 44 44" className="h-11 w-11" style={frost} aria-hidden="true">
+                <polygon points="17.8,15.6 28.4,22 17.8,28.4" fill="#eef2f8" />
+              </svg>
             ) : (
-              <Pause className="h-4 w-4" />
+              <svg viewBox="0 0 44 44" className="h-11 w-11" style={frost} aria-hidden="true">
+                <rect x="18.5" y="15.6" width="2.4" height="12.8" rx="1.1" fill="#eef2f8" />
+                <rect x="23.1" y="15.6" width="2.4" height="12.8" rx="1.1" fill="#eef2f8" />
+              </svg>
             )}
           </button>
           <div className="pointer-events-auto justify-self-center">
@@ -163,10 +175,23 @@ const Index = () => {
           <button
             onClick={() => setSettingsOpen(true)}
             aria-label="Settings"
-            className="pointer-events-auto justify-self-end h-11 w-11 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
-            style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
+            className="pointer-events-auto justify-self-end h-11 w-11 rounded-full flex items-center justify-center hover:brightness-125 transition-all active:scale-90"
+            style={{ backgroundImage: `url(${glassRight})`, backgroundSize: "cover", backgroundPosition: "center" }}
           >
-            <Settings className="h-4 w-4" />
+            <svg viewBox="0 0 44 44" className="h-11 w-11" style={frost} aria-hidden="true">
+              <g fill="#eef2f8">
+                <circle cx="22" cy="22" r="4.4" />
+                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(0 22 22)" />
+                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(45 22 22)" />
+                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(90 22 22)" />
+                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(135 22 22)" />
+                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(180 22 22)" />
+                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(225 22 22)" />
+                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(270 22 22)" />
+                <rect x="21.01" y="15.18" width="1.98" height="2.2" rx="0.44" transform="rotate(315 22 22)" />
+              </g>
+              <circle cx="22" cy="22" r="1.76" fill="#0c0d0f" />
+            </svg>
           </button>
         </div>
       </footer>
