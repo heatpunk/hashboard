@@ -148,8 +148,11 @@ const Index = () => {
           <button
             onClick={() => { try { navigator.vibrate?.(15); } catch (e) {} togglePause(miner.id); }}
             aria-label={paused ? "Resume mining" : "Pause mining"}
-            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full border border-border backdrop-blur flex items-center justify-center hover:bg-secondary transition-all active:scale-90"
-            style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
+            className="pointer-events-auto justify-self-start h-11 w-11 rounded-full flex items-center justify-center hover:brightness-125 transition-all active:scale-90"
+            style={{
+              background: "radial-gradient(ellipse at 42% 30%, rgba(90,90,90,0.65) 0%, rgba(20,20,20,0.98) 45%, rgba(8,8,8,1) 100%)",
+              boxShadow: "0 5px 15px rgba(0,0,0,0.85), 0 0 0 2.5px rgba(155,155,155,0.75), 0 0 0 4px rgba(25,25,25,0.95), 0 0 0 5.5px rgba(110,110,110,0.5), inset 0 -3px 8px rgba(0,0,0,0.8), inset 0 1px 3px rgba(255,255,255,0.12)",
+            }}
           >
             {paused ? (
               <Play className="h-4 w-4" />
@@ -163,8 +166,11 @@ const Index = () => {
           <button
             onClick={() => setSettingsOpen(true)}
             aria-label="Settings"
-            className="pointer-events-auto justify-self-end h-11 w-11 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
-            style={{ background: "hsl(var(--surface-elevated) / 0.85)" }}
+            className="pointer-events-auto justify-self-end h-11 w-11 rounded-full flex items-center justify-center hover:brightness-125 transition-all active:scale-90"
+            style={{
+              background: "radial-gradient(ellipse at 42% 30%, rgba(90,90,90,0.65) 0%, rgba(20,20,20,0.98) 45%, rgba(8,8,8,1) 100%)",
+              boxShadow: "0 5px 15px rgba(0,0,0,0.85), 0 0 0 2.5px rgba(155,155,155,0.75), 0 0 0 4px rgba(25,25,25,0.95), 0 0 0 5.5px rgba(110,110,110,0.5), inset 0 -3px 8px rgba(0,0,0,0.8), inset 0 1px 3px rgba(255,255,255,0.12)",
+            }}
           >
             <Settings className="h-4 w-4" />
           </button>
