@@ -1,61 +1,94 @@
-# Hashboard – ASIC-monitor för mobil
+# Hashboard
 
-Realtidsövervakning av CGMiner-baserade ASIC-miners, byggd för att nås från mobil/surfplatta på samma LAN.
+> A dead-simple UI for running a Bitcoin ASIC miner as a space heater — built so anyone in the house can use it.
 
-## Starta appen
+<p align="center">
+  <img src="docs/screenshots/hero.png" alt="Hashboard — dark mode" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/pearl.png" alt="Hashboard — Pearl (light) mode" width="300">
+</p>
 
+Hashboard turns an ASIC miner into an ordinary appliance: open it on your phone, see how much heat it's making, and slide it up or down. No mining knowledge required. It's made for the people you share a home with — your partner, your kids, a friend — not for the person who set the miner up.
+
+It installs in one tap on **StartOS (Start9)**, with **Umbrel** and **Home Assistant** on the way.
+
+## Features
+
+- 🔥 **One slider** — set the miner's power (and therefore its heat) anywhere from off up to its configured maximum.
+- 🔒 **Safe by design** — the maximum is captured from the miner's own power target on first connect and locked. Nobody can push it higher than how it was set up; changing the ceiling means removing and re-adding the miner.
+- ⏯️ **Pause / resume** from your pocket.
+- 📊 **Live readout** — hashrate, power draw, chip temperature and fan speed, refreshed every few seconds.
+- 🔎 **LAN scan** — finds miners on your network automatically.
+- 🤍 **Pearl & dark themes**, mobile-first.
+- 🧩 **Multi-firmware** through the open [asic-rs](https://github.com/256foundation/asic-rs) library.
+
+## Supported miners
+
+Hashboard speaks to miners through the open **asic-rs** library from the [256 Foundation](https://github.com/256foundation/asic-rs). Monitoring works across **Antminer (stock), Whatsminer, Avalon, BraiinsOS+, LuxOS, Vnish, ePIC, Marathon, Bitaxe** and more. Power-target control is available wherever the firmware exposes it.
+
+## Install
+
+### StartOS (Start9) — recommended
+Download the latest `hashboard.s9pk` from [**Releases**](https://github.com/heatpunk/hashboard/releases/latest) and sideload it: in StartOS, go to **System → Sideload** and pick the file.
+
+### Docker
 ```bash
-npm install
-npm run dev:full
+docker run -d --network host --name hashboard ghcr.io/heatpunk/hashboard:latest
 ```
+`--network host` lets the container reach miners on your LAN. The UI is served on port 80.
 
-`dev:full` startar Rust-proxyn (`cargo run` i `proxy-rs/`) och Vite parallellt.
+### Umbrel / Home Assistant
+Planned — see the roadmap.
 
-När proxyn startar skrivs adressen ut:
-
-```
-Hashboard proxy-rs → http://127.0.0.1:8081
-```
-
-Öppna Vite-adressen (visas i terminalen) i webbläsaren på din mobil (måste vara i samma nätverk).
-
-## Arkitektur
+## How it works
 
 ```
-Browser / Mobile
-       │
-       ▼
-serve.cjs  :80  (Node.js – serverar dist/ + reverse-proxies /api/*)
-       │
-       ▼
-proxy-rs   :8081  (Rust – asic-rs – pratar med minern)
-       │
-       ▼
-Miner  :4028  (CGMiner / BraiinsOS / LuxOS / Vnish / stock Antminer …)
+ Phone / tablet (same Wi-Fi)
+          │
+          ▼
+ serve.cjs  :80     Node — serves the built UI and reverse-proxies /api/*
+          │
+          ▼
+ proxy-rs   :8081   Rust — uses asic-rs to talk to the miner
+          │
+          ▼
+ Miner              each firmware's native API (BraiinsOS, LuxOS, stock, …)
 ```
 
-- **UI (React/Vite)** – byggs till `dist/` och serveras statiskt av `serve.cjs`.
-- **`serve.cjs` (Node.js, port 80/8080)** – serverar `dist/` och reverse-proxar alla `/api/*`-anrop till `proxy-rs` på `127.0.0.1:8081`. Lämnas oförändrat.
-- **`proxy-rs` (Rust, port 8081)** – ny Rust-tjänst som ersätter den gamla Node-proxyn. Använder [asic-rs](https://github.com/256foundation/asic-rs) (256Foundation) för firmware-stöd: BraiinsOS, LuxOS, Vnish, stock Antminer, Whatsminer, Avalonminer, ePIC, Marathon, Bitaxe m.fl.
-- **Miner** – CGMiner-kompatibelt TCP-API på port 4028.
+- **UI** — React/Vite, built to static assets.
+- **`serve.cjs`** — tiny Node server that serves the UI and forwards every `/api/*` call to `proxy-rs`.
+- **`proxy-rs`** — Rust service that does all miner communication via [asic-rs](https://github.com/256foundation/asic-rs); replaces the original Node/CGMiner proxy.
+
+More detail in [proxy-rs/MAPPING.md](proxy-rs/MAPPING.md).
 
 ## API
 
-| Endpoint | Beskrivning |
+`proxy-rs` exposes a small JSON API on `127.0.0.1:8081`:
+
+| Endpoint | Description |
 |----------|-------------|
-| `GET /api/health` | Hälsokontroll |
-| `GET /api/miners/{ip}/stats` | Live-data (hashrate, watt, temp, fans) |
-| `POST /api/miners/{ip}/pause` | Pausa mining |
-| `POST /api/miners/{ip}/resume` | Återuppta mining |
-| `GET /api/miners/{ip}/rawdata` | Rådata från asic-rs (debug) |
-| `GET /api/scan?subnet=192.168.1` | Skanna hela `/24`-subnätet |
+| `GET /api/health` | Health check |
+| `GET /api/miners/{ip}/stats` | Live data (hashrate, watts, temp, fans, power target) |
+| `POST /api/miners/{ip}/power` | Set the whole-machine power target |
+| `POST /api/miners/{ip}/pause` | Pause mining |
+| `POST /api/miners/{ip}/resume` | Resume mining |
+| `GET /api/scan?subnet=192.168.1` | Scan a `/24` subnet for miners |
+| `GET /api/miners/{ip}/rawdata` | Raw asic-rs data (debug) |
 
-## Lägg till en miner
+## Development
 
-1. Tryck på kugghjulet (Inställningar).
-2. Ange minerens IP-adress (t.ex. `192.168.1.106`).
-3. Badgen växlar från **SIM** till **LIVE** inom 5 sekunder om minern svarar.
+```bash
+npm install
+npm run dev:full     # starts the Rust proxy (cargo) and Vite together
+```
 
-## Skanna hela subnätet
+Open the Vite URL (port `8080`) from a phone on the same network. See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites, tests and project layout.
 
-Tryck **Scan LAN** i inställningarna – söker av hela `/24`-subnätet automatiskt.
+## Built on
+
+- [**asic-rs**](https://github.com/256foundation/asic-rs) — the 256 Foundation's open miner-management library, which gives Hashboard its multi-firmware support.
+- [**StartOS**](https://github.com/Start9Labs/start-os) — the sovereign-server OS Hashboard packages for.
+
+## License
+
+[MIT](LICENSE) © heatpunk
