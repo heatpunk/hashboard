@@ -41,10 +41,10 @@ const Index = () => {
     return () => clearInterval(id);
   }, [tick]);
 
-  // Real API poll every 5 s via local proxy
+  // Real API poll every 2 s via local proxy
   useEffect(() => {
     pollLive();
-    const id = setInterval(pollLive, 5000);
+    const id = setInterval(pollLive, 2000);
     return () => clearInterval(id);
   }, [pollLive]);
 

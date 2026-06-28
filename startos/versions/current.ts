@@ -1,10 +1,10 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.4.2:0',
+  version: '0.4.7:0',
   releaseNotes: {
     en_US:
-      'Visual update: the power slider is reborn as a glass capsule, and the app ships a complete new icon set — home-screen/app icon, browser favicon and a proper app name. Everything from 0.4.1 is unchanged: the slider still sets the miner’s whole-machine power target via the open asic-rs library (Antminer/stock, Whatsminer, Avalon, BraiinsOS, LuxOS, Vnish, ePIC, Marathon, Bitaxe and more), with the first-connect ceiling captured as a locked maximum.',
+      'Glass redesign: the play/pause and settings buttons are now clear glass that lets the background show through, with the icons frosted into the glass, in both light and dark themes. New subtle themed backgrounds — pearl marble in light mode and near-black leather in dark mode. The settings icon is now a proper filled cog. The power slider’s minimum is the miner’s real minimum power target (read from BraiinsOS+ when exposed, otherwise one third of the maximum) instead of zero. Live readouts at the top now refresh more frequently.',
   },
   migrations: {
     up: async ({ effects }) => {},

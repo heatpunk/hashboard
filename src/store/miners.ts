@@ -212,10 +212,20 @@ export const useMiners = create<State>()(
             // Capture the whole-machine power ceiling ONCE at first connection
             // and freeze it — subsequent polls must not overwrite it.
             const captured = m.config.powerMax > 0;
-            const configPatch =
-              !captured && snap.machineFull != null && snap.machineFull > 0
-                ? { powerMin: snap.powerMin != null && snap.powerMin > 0 ? snap.powerMin : Math.round(snap.machineFull / 3), powerMax: snap.machineFull, powerTarget: snap.machineFull }
-                : {};
+            const effMax = captured ? m.config.powerMax : (snap.machineFull ?? 0);
+            const configPatch = {
+              ...(!captured && snap.machineFull != null && snap.machineFull > 0
+                ? { powerMax: snap.machineFull, powerTarget: snap.machineFull }
+                : {}),
+              ...(effMax > 0
+                ? {
+                    powerMin:
+                      snap.powerMin != null && snap.powerMin > 0
+                        ? snap.powerMin
+                        : Math.round(effMax / 3),
+                  }
+                : {}),
+            };
             return {
               ...m,
               online: true,
