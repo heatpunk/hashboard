@@ -44,6 +44,38 @@ function StatusDot({ status }: { status: DisplayStatus }) {
   );
 }
 
+/** Slowly rotating sonar sweep (issue #58). Stands in for the name label as
+ *  the menu handle while no miners exist — tapping it opens the menu where
+ *  Scan LAN lives. */
+function SonarSweep() {
+  return (
+    <span
+      aria-hidden="true"
+      className="relative block h-11 w-11 rounded-full overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(circle, hsl(140 25% 42% / 0.30) 0%, hsl(140 25% 36% / 0.20) 60%, transparent 73%)",
+      }}
+    >
+      <span
+        className="absolute inset-0 rounded-full animate-spin"
+        style={{
+          animationDuration: "6s",
+          background:
+            "conic-gradient(from 0deg, transparent 0deg, transparent 290deg, hsl(140 70% 55% / 0.04) 308deg, hsl(140 75% 58% / 0.15) 330deg, hsl(140 80% 62% / 0.5) 347deg, hsl(140 90% 72% / 0.95) 356deg, hsl(140 95% 82%) 360deg)",
+        }}
+      />
+      <span
+        className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          background: "hsl(140 90% 80%)",
+          boxShadow: "0 0 4px hsl(140 90% 70%)",
+        }}
+      />
+    </span>
+  );
+}
+
 export function MinerSwitcher() {
   const miners = useMiners((s) => s.miners);
   const selectedId = useMiners((s) => s.selectedId);
@@ -56,16 +88,36 @@ export function MinerSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/70">
-        {current && <StatusDot status={displayStatus(current, liveMode)} />}
-        <span className="text-[11px] tracking-display uppercase">
-          {current?.config.name ?? "—"}
-        </span>
+      <DropdownMenuTrigger
+        aria-label={current ? undefined : "Open menu to scan LAN"}
+        className={
+          current
+            ? "group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/70"
+            : "group flex items-center rounded-full"
+        }
+      >
+        {current ? (
+          <>
+            <StatusDot status={displayStatus(current, liveMode)} />
+            <span className="text-[11px] tracking-display uppercase">
+              {current.config.name}
+            </span>
+          </>
+        ) : (
+          <SonarSweep />
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel className="text-[10px] tracking-display text-muted-foreground">
-          Miners on LAN
-        </DropdownMenuLabel>
+      {/* Utan miners finns bara Scan LAN att visa — kompakt meny, centrerad
+          under sonaren. Med miners: full bredd för namn/ip/status. */}
+      <DropdownMenuContent
+        align={miners.length ? "start" : "center"}
+        className={miners.length ? "w-64" : "min-w-0"}
+      >
+        {miners.length > 0 && (
+          <DropdownMenuLabel className="text-[10px] tracking-display text-muted-foreground">
+            Miners on LAN
+          </DropdownMenuLabel>
+        )}
         {miners.map((m) => {
           const status = displayStatus(m, liveMode);
           const selected = m.id === selectedId;
@@ -99,7 +151,7 @@ export function MinerSwitcher() {
             </DropdownMenuItem>
           );
         })}
-        <DropdownMenuSeparator />
+        {miners.length > 0 && <DropdownMenuSeparator />}
         <DropdownMenuItem
           onClick={(e) => {
             e.preventDefault();

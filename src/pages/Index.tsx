@@ -50,16 +50,18 @@ const Index = () => {
 
   if (!miner) {
     return (
-      <div className="min-h-screen text-foreground flex flex-col items-center justify-center gap-6 px-8">
-        <h1
-          className="text-sm font-light uppercase text-muted-foreground/80"
-          style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
-        >
-          Hashboard
-        </h1>
-        <p className="text-xs text-muted-foreground text-center leading-relaxed">
-          No miners configured. Open the menu below and tap <strong>Scan LAN</strong> to find miners on your network, or add one manually in Settings.
-        </p>
+      <div className="min-h-screen text-foreground flex flex-col px-8">
+        <div className="flex-1 flex flex-col items-center justify-center gap-6">
+          <h1
+            className="text-sm font-light uppercase text-muted-foreground/80"
+            style={{ letterSpacing: "0.6em", paddingLeft: "0.6em" }}
+          >
+            Hashboard
+          </h1>
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            Open the menu below and tap <strong>Scan LAN</strong> to find miners on your network.
+          </p>
+        </div>
         <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 flex justify-center">
           <MinerSwitcher />
         </div>
