@@ -30,3 +30,4 @@ dist-ssr
 *.s9pk
 sdk-build/javascript/
 sdk-build/node_modules/
+__pycache__/
