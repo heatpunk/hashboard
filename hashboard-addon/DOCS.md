@@ -9,10 +9,11 @@ Supervised** only. If your Home Assistant runs as a container — for example
 **on StartOS**, on Umbrel, or in plain Docker — there is no add-on store and
 this add-on cannot be installed.
 
-**Running Home Assistant on StartOS?** You don't need this add-on: install
-the native **Hashboard app on the same StartOS server** instead, and
-(optionally) show it inside a Home Assistant dashboard with a **Webpage
-card** pointing at Hashboard's LAN address. Same app, nothing duplicated.
+**Running Home Assistant on StartOS (or any container-based install)?**
+Install the native **Hashboard app on your StartOS server**, then use the
+**HACS integration** (see below) to pull live miner data into Home Assistant
+as proper sensors. You get full automations, dashboards, and history — no
+add-on needed.
 
 ## Installation (Home Assistant OS / Supervised)
 
@@ -22,6 +23,27 @@ card** pointing at Hashboard's LAN address. Same app, nothing duplicated.
 3. Install **Hashboard** from the list and start it.
 4. Open the Web UI (port `8099` by default), then tap **Scan LAN** in the
    menu — or add your miner's IP manually in Settings.
+
+## Installation via HACS (StartOS / Docker / any HA install)
+
+HACS lets any Home Assistant install pull live miner data from a running
+Hashboard instance — no add-on store required.
+
+**Prerequisites:** Hashboard is already running somewhere on your LAN (e.g.,
+the native StartOS app, or any Docker host).
+
+1. Install [HACS](https://hacs.xyz) in Home Assistant if you haven't already.
+2. In HACS → Integrations, open the **⋮ menu → Custom repositories**, add
+   `https://github.com/heatpunk/hashboard` and choose category
+   **Integration**.
+3. Search for **Hashboard** in HACS and install it. Restart Home Assistant.
+4. Go to **Settings → Devices & Services → Add Integration**, search for
+   **Hashboard**, and enter:
+   - **Hashboard URL** — the address of your Hashboard server, e.g.
+     `http://192.168.1.100:8099`
+   - **Miner IP** — the LAN IP of your ASIC miner
+5. Home Assistant now has four sensors per miner: hashrate (TH/s), power (W),
+   chip temperature (°C), and fan speed (%).
 
 ## How it works
 
