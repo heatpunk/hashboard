@@ -1,5 +1,5 @@
 name: Hashboard
-version: "0.5.1"
+version: "0.5.2"
 slug: hashboard
 description: Run your ASIC miner as a space heater — simple enough for anyone in the house
 url: https://github.com/heatpunk/hashboard

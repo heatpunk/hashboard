@@ -1,10 +1,10 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.5.1:0',
+  version: '0.5.2:0',
   releaseNotes: {
     en_US:
-      'The real Hashboard icon now shows everywhere (StartOS, Home Assistant, Umbrel) instead of the old placeholder. Clearer start-screen instruction. Board count no longer flickers during the cool-down after a power-target change.',
+      'The pause/play button and status dot now reflect the miner’s real state instead of guessing from hashrate — no more false PAUSED while a miner restarts or spins up. Powered by the 256 Foundation’s asic-rs 0.7.2, where the mining state is reported explicitly by the firmware.',
   },
   migrations: {
     up: async ({ effects }) => {},
