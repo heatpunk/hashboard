@@ -44,6 +44,38 @@ function StatusDot({ status }: { status: DisplayStatus }) {
   );
 }
 
+/** Slowly rotating sonar sweep (issue #58). Stands in for the name label as
+ *  the menu handle while no miners exist — tapping it opens the menu where
+ *  Scan LAN lives. */
+function SonarSweep() {
+  return (
+    <span
+      aria-hidden="true"
+      className="relative block h-10 w-10 rounded-full overflow-hidden"
+      style={{
+        background: "hsl(140 40% 45% / 0.10)",
+        boxShadow: "inset 0 0 0 1px hsl(140 60% 50% / 0.3)",
+      }}
+    >
+      <span
+        className="absolute inset-0 rounded-full animate-spin"
+        style={{
+          animationDuration: "6s",
+          background:
+            "conic-gradient(from 0deg, transparent 0deg, transparent 240deg, hsl(140 80% 55% / 0.04) 265deg, hsl(140 80% 55% / 0.2) 315deg, hsl(140 85% 62% / 0.9) 357deg, hsl(140 90% 72%) 360deg)",
+        }}
+      />
+      <span
+        className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          background: "hsl(140 85% 65%)",
+          boxShadow: "0 0 5px hsl(140 85% 60% / 0.9)",
+        }}
+      />
+    </span>
+  );
+}
+
 export function MinerSwitcher() {
   const miners = useMiners((s) => s.miners);
   const selectedId = useMiners((s) => s.selectedId);
@@ -56,11 +88,20 @@ export function MinerSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/70">
-        {current && <StatusDot status={displayStatus(current, liveMode)} />}
-        <span className="text-[11px] tracking-display uppercase">
-          {current?.config.name ?? "—"}
-        </span>
+      <DropdownMenuTrigger
+        aria-label={current ? undefined : "Open menu to scan LAN"}
+        className="group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/70"
+      >
+        {current ? (
+          <>
+            <StatusDot status={displayStatus(current, liveMode)} />
+            <span className="text-[11px] tracking-display uppercase">
+              {current.config.name}
+            </span>
+          </>
+        ) : (
+          <SonarSweep />
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
         <DropdownMenuLabel className="text-[10px] tracking-display text-muted-foreground">

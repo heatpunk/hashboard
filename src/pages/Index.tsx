@@ -59,15 +59,8 @@ const Index = () => {
             Hashboard
           </h1>
           <p className="text-xs text-muted-foreground text-center leading-relaxed">
-            No miners configured. Open the menu below and tap <strong>Scan LAN</strong> to find miners on your network, or add one manually in Settings.
+            Open the menu below and tap <strong>Scan LAN</strong> to find miners on your network.
           </p>
-        </div>
-        <div className="flex justify-center pb-28">
-          <div className="relative flex items-center justify-center w-16 h-16">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-green-500/20 animate-ping" style={{ animationDuration: "2s" }} />
-            <span className="absolute inline-flex h-10 w-10 rounded-full bg-green-500/20 animate-ping" style={{ animationDuration: "2s", animationDelay: "0.7s" }} />
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500/60" />
-          </div>
         </div>
         <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 flex justify-center">
           <MinerSwitcher />
