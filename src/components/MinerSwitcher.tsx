@@ -51,10 +51,10 @@ function SonarSweep() {
   return (
     <span
       aria-hidden="true"
-      className="relative block h-10 w-10 rounded-full overflow-hidden"
+      className="relative block h-11 w-11 rounded-full overflow-hidden"
       style={{
-        background: "hsl(140 40% 45% / 0.10)",
-        boxShadow: "inset 0 0 0 1px hsl(140 60% 50% / 0.3)",
+        background:
+          "radial-gradient(circle, hsl(140 25% 42% / 0.30) 0%, hsl(140 25% 36% / 0.20) 60%, transparent 73%)",
       }}
     >
       <span
@@ -62,14 +62,14 @@ function SonarSweep() {
         style={{
           animationDuration: "6s",
           background:
-            "conic-gradient(from 0deg, transparent 0deg, transparent 240deg, hsl(140 80% 55% / 0.04) 265deg, hsl(140 80% 55% / 0.2) 315deg, hsl(140 85% 62% / 0.9) 357deg, hsl(140 90% 72%) 360deg)",
+            "conic-gradient(from 0deg, transparent 0deg, transparent 195deg, hsl(140 70% 55% / 0.03) 225deg, hsl(140 75% 58% / 0.12) 290deg, hsl(140 80% 62% / 0.5) 342deg, hsl(140 90% 72% / 0.95) 356deg, hsl(140 95% 82%) 360deg)",
         }}
       />
       <span
-        className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          background: "hsl(140 85% 65%)",
-          boxShadow: "0 0 5px hsl(140 85% 60% / 0.9)",
+          background: "hsl(140 90% 80%)",
+          boxShadow: "0 0 4px hsl(140 90% 70%)",
         }}
       />
     </span>
