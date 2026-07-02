@@ -13,5 +13,6 @@ ASIC-miner-monitor byggd i React/Vite med en Node.js-proxy mot CGMiner (port 402
 
 1. Bumpa version i `startos/versions/current.ts` och `startos/manifest/index.ts` (Docker-taggen).
 2. Uppdatera `IMAGE`-variabeln i `Makefile`.
+2b. Bumpa `version` i `umbrel/hashboard/umbrel-app.yml` + image-taggen i `umbrel/hashboard/docker-compose.yml`, och spegla till repot `heatpunk/umbrel-app-store`.
 3. Committa och pusha till `main`.
 4. Trigga `release.yml` via `workflow_dispatch` med versionsnumret som input – det bygger Docker-imagen, packar `hashboard.s9pk` och skapar en GitHub Release automatiskt.

@@ -37,7 +37,16 @@ docker run -d --network host --name hashboard ghcr.io/heatpunk/hashboard:latest
 ```
 `--network host` lets the container reach miners on your LAN. The UI is served on port 80.
 
-### Umbrel / Home Assistant
+### Umbrel
+Add our community app store in your Umbrel — **App Store → ⋯ → Community App Stores** — with this URL:
+
+```
+https://github.com/heatpunk/umbrel-app-store
+```
+
+Then install **Hashboard** from the store. Details and official-store submission notes live in [`umbrel/README.md`](umbrel/README.md).
+
+### Home Assistant
 Planned — see the roadmap.
 
 ## How it works
