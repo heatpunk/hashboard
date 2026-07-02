@@ -59,7 +59,7 @@ const Index = () => {
             Hashboard
           </h1>
           <p className="text-xs text-muted-foreground text-center leading-relaxed">
-            Open the menu below and tap <strong>Scan LAN</strong> to find miners on your network.
+            Tap below and <strong>Scan LAN</strong> to find miners on your local network.
           </p>
         </div>
         <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 flex justify-center">
