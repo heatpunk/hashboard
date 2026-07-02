@@ -5,6 +5,7 @@ description: Run your ASIC miner as a space heater — simple enough for anyone 
 url: https://github.com/heatpunk/hashboard
 arch:
   - amd64
+  - aarch64
 image: ghcr.io/heatpunk/hashboard
 init: false
 ports:
