@@ -2,7 +2,19 @@
 
 A dead-simple UI for running a Bitcoin ASIC miner as a space heater.
 
-## Installation
+## Which Home Assistant installs does this work on?
+
+Add-ons are a feature of **Home Assistant OS** and **Home Assistant
+Supervised** only. If your Home Assistant runs as a container — for example
+**on StartOS**, on Umbrel, or in plain Docker — there is no add-on store and
+this add-on cannot be installed.
+
+**Running Home Assistant on StartOS?** You don't need this add-on: install
+the native **Hashboard app on the same StartOS server** instead, and
+(optionally) show it inside a Home Assistant dashboard with a **Webpage
+card** pointing at Hashboard's LAN address. Same app, nothing duplicated.
+
+## Installation (Home Assistant OS / Supervised)
 
 1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**.
 2. Open the **⋮ menu → Repositories** and add:
