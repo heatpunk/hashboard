@@ -208,7 +208,11 @@ export const useMiners = create<State>()(
             // No response this poll → mark offline, keep last known values.
             if (!snap) return { ...m, online: false };
             const live = snap.live;
-            const boards = snap.boards ?? m.boards;
+            // Only trust board counts while actively hashing. During cool-down
+            // after a power-target change, asic-rs may report misleading board
+            // counts (e.g. all boards "active" via last-resort fallback), which
+            // would temporarily corrupt the scaled Range and Target readouts.
+            const boards = (snap.live.th > 0.5 ? snap.boards : null) ?? m.boards;
             // Capture the whole-machine power ceiling ONCE at first connection
             // and freeze it — subsequent polls must not overwrite it.
             const captured = m.config.powerMax > 0;
