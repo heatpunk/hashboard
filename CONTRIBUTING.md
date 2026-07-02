@@ -52,3 +52,5 @@ Hashboard does not implement per-firmware protocols itself — that lives upstre
 ## Releasing
 
 Releases are cut from `main` via the `release.yml` workflow (bump the version in `startos/versions/current.ts`, `startos/manifest/index.ts` and the `Makefile`, then run the workflow). The s9pk and GitHub Release are produced automatically.
+
+The Umbrel packaging is version-pinned too: bump `version` in `umbrel/hashboard/umbrel-app.yml` and the image tag in `umbrel/hashboard/docker-compose.yml`, then mirror the changes to [heatpunk/umbrel-app-store](https://github.com/heatpunk/umbrel-app-store) so the community store serves the new version.
