@@ -10,6 +10,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfPower, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -60,14 +61,14 @@ class HashboardCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict:
         endpoint = f"{self._url}/api/miners/{self._miner_ip}/stats"
+        session = async_get_clientsession(self.hass)
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    endpoint, timeout=aiohttp.ClientTimeout(total=10)
-                ) as resp:
-                    resp.raise_for_status()
-                    data = await resp.json()
-                    return data.get("live", {})
+            async with session.get(
+                endpoint, timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+                return data.get("live", {})
         except Exception as err:
             raise UpdateFailed(f"Error fetching {endpoint}: {err}") from err
 

@@ -22,9 +22,7 @@ class HashboardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
-                        "hashboard_url", default="http://localhost:8099"
-                    ): str,
+                    vol.Required("hashboard_url"): str,
                     vol.Required("miner_ip"): str,
                 }
             ),
