@@ -86,4 +86,4 @@ or fall back to option 3 (keep grpcurl and implement a thin BraiinsOS gRPC fallb
 |---------------------------|---------------------------------------------------------|
 | Power limit for all FW    | `tuning_capabilities.power.maximum` if available, else `null` |
 | Fan speed as percentage   | Derived from `FanData.rpm` ÷ 6000 RPM × 100, capped at 100 % |
-| Explicit "paused" state   | `live.th == 0` and `live.watts == 0` signal paused state to UI |
+| ~~Explicit "paused" state~~ | **Resolved in asic-rs 0.7.2**: `MinerData.is_mining` is reliable and mapped to the top-level `paused` field in the stats response; the UI no longer infers paused from `th ≈ 0`. |

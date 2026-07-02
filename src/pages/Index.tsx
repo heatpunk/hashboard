@@ -22,7 +22,6 @@ const Index = () => {
   const togglePause = useMiners((s) => s.togglePause);
   const tick = useMiners((s) => s._tick);
   const pollLive = useMiners((s) => s.pollLive);
-  const liveMode = useMiners((s) => s.liveMode);
   const intents = useMiners((s) => s.intents);
   const theme = useMiners((s) => s.theme);
 
@@ -74,7 +73,7 @@ const Index = () => {
       ? (miner.live.watts / miner.live.th).toFixed(1)
       : "—";
   const intent = intents[miner.id];
-  const paused = intent ? intent.paused : liveMode ? miner.live.th <= 0.5 : miner.status === "paused";
+  const paused = intent ? intent.paused : miner.status === "paused";
   const ba = miner.boards?.active ?? 1;
   const bt = miner.boards?.total ?? 1;
   const axis = axisLabels(

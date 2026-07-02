@@ -103,10 +103,10 @@ export const useMiners = create<State>()(
         })),
 
       togglePause: async (id) => {
-        const { miners, liveMode, intents } = get();
+        const { miners, intents } = get();
         const m = miners.find((x) => x.id === id);
         if (!m) return;
-        const currentlyPaused = intents[id]?.paused ?? (liveMode ? m.live.th <= 0.5 : m.status === "paused");
+        const currentlyPaused = intents[id]?.paused ?? m.status === "paused";
         const desiredPaused = !currentlyPaused;
         // optimistic: flip the icon instantly, hold ~20s until polls confirm
         set((s) => ({
@@ -233,6 +233,7 @@ export const useMiners = create<State>()(
             return {
               ...m,
               online: true,
+              status: snap.paused ? ("paused" as const) : ("mining" as const),
               boards,
               config: { ...m.config, ...configPatch },
               live: {
@@ -254,7 +255,7 @@ export const useMiners = create<State>()(
           const intents = { ...s.intents };
           for (const mm of s.miners) {
             const it = intents[mm.id];
-            if (it && (now > it.until || ((mm.live.th ?? 0) <= 0.5) === it.paused)) {
+            if (it && (now > it.until || (mm.status === "paused") === it.paused)) {
               delete intents[mm.id];
               changed = true;
             }
