@@ -26,6 +26,7 @@ dependencies: []
 repo: https://github.com/heatpunk/hashboard
 support: https://github.com/heatpunk/hashboard/issues
 port: 3847
+icon: https://raw.githubusercontent.com/heatpunk/umbrel-app-store/main/heatpunk-hashboard/icon.png
 gallery: []
 path: ""
 defaultUsername: ""

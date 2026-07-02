@@ -6,7 +6,7 @@ Scaffold to package Hashboard for **StartOS 0.4.0.x**.
 - `../Dockerfile` - build (Vite -> dist) + runtime (proxy :8081 + UI/`/api` :80).
 - `../server/serve.cjs` - production server: serves `dist/` and reverse-proxies `/api/*` -> `127.0.0.1:8081`.
 - `manifest.yaml` - package manifest **(TEMPLATE - verify against the 0.4.0.x SDK schema)**.
-- `icon.svg` / `icon.png` - app icon.
+- `icon.png` - app icon.
 - `instructions.md` - post-install instructions.
 
 ## Build & publish (from repo root)
