@@ -90,7 +90,11 @@ export function MinerSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={current ? undefined : "Open menu to scan LAN"}
-        className="group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/70"
+        className={
+          current
+            ? "group flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-secondary/60 transition-colors text-muted-foreground/70"
+            : "group flex items-center rounded-full"
+        }
       >
         {current ? (
           <>
@@ -103,10 +107,17 @@ export function MinerSwitcher() {
           <SonarSweep />
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel className="text-[10px] tracking-display text-muted-foreground">
-          Miners on LAN
-        </DropdownMenuLabel>
+      {/* Utan miners finns bara Scan LAN att visa — kompakt meny, centrerad
+          under sonaren. Med miners: full bredd för namn/ip/status. */}
+      <DropdownMenuContent
+        align={miners.length ? "start" : "center"}
+        className={miners.length ? "w-64" : "min-w-0"}
+      >
+        {miners.length > 0 && (
+          <DropdownMenuLabel className="text-[10px] tracking-display text-muted-foreground">
+            Miners on LAN
+          </DropdownMenuLabel>
+        )}
         {miners.map((m) => {
           const status = displayStatus(m, liveMode);
           const selected = m.id === selectedId;
@@ -140,7 +151,7 @@ export function MinerSwitcher() {
             </DropdownMenuItem>
           );
         })}
-        <DropdownMenuSeparator />
+        {miners.length > 0 && <DropdownMenuSeparator />}
         <DropdownMenuItem
           onClick={(e) => {
             e.preventDefault();
