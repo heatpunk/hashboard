@@ -152,7 +152,7 @@ const Index = () => {
         <div className="w-full grid grid-cols-3 items-center">
           <button
             onClick={() => { try { navigator.vibrate?.(15); } catch { /* haptics are optional */ } togglePause(miner.id); }}
-            aria-label={paused ? "Resume mining" : "Pause mining"}
+            aria-label={paused ? "Resume mining" : "Stop mining"}
             className="pointer-events-auto justify-self-start relative overflow-hidden h-11 w-11 rounded-full flex items-center justify-center transition-all active:scale-90 hover:brightness-110"
             style={{ boxShadow: "0 4px 10px -4px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.5), inset 0 1.5px 2px -1px rgba(255,255,255,0.85), inset 0 -5px 8px -5px rgba(255,255,255,0.22)" }}
           >
@@ -160,10 +160,7 @@ const Index = () => {
               {paused ? (
                 <polygon points="17.8,15.6 28.4,22 17.8,28.4" fill="currentColor" />
               ) : (
-                <>
-                  <rect x="18.5" y="15.6" width="2.4" height="12.8" rx="1.1" fill="currentColor" />
-                  <rect x="23.1" y="15.6" width="2.4" height="12.8" rx="1.1" fill="currentColor" />
-                </>
+                <rect x="17.2" y="17.2" width="9.6" height="9.6" rx="1.4" fill="currentColor" />
               )}
             </svg>
             <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full" style={{ background: "radial-gradient(ellipse 62% 40% at 44% 22%, rgba(255,255,255,0.7), transparent 60%)", mixBlendMode: "screen" }} />
