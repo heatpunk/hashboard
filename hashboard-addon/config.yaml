@@ -1,0 +1,16 @@
+name: Hashboard
+version: "0.4.7"
+slug: hashboard
+description: Run your ASIC miner as a space heater — simple enough for anyone in the house
+url: https://github.com/heatpunk/hashboard
+arch:
+  - amd64
+image: ghcr.io/heatpunk/hashboard
+init: false
+ports:
+  80/tcp: 8099
+ports_description:
+  80/tcp: Web UI
+webui: http://[HOST]:[PORT:80]
+startup: services
+boot: auto
