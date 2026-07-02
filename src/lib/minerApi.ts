@@ -20,6 +20,9 @@ export interface MinerSnapshot {
   powerMin: number | null;
   /** active vs total hashboards — the share is active/total */
   boards: { active: number; total: number } | null;
+  /** explicit paused state from the miner (asic-rs is_mining); falls back to
+   *  the old hashrate≈0 heuristic against proxies that predate the field */
+  paused: boolean;
   /** reserved for control flows; reads no longer require a password */
   needPassword: boolean;
 }
@@ -40,6 +43,7 @@ export async function fetchMinerStats(ip: string, password?: string): Promise<Mi
       machineFull: (data.config?.fullTarget ?? null) as number | null,
       powerMin: (data.config?.powerMin ?? null) as number | null,
       boards: (data.config?.boards ?? null) as { active: number; total: number } | null,
+      paused: typeof data.paused === "boolean" ? data.paused : ((data.live as MinerStats)?.th ?? 0) <= 0.5,
       needPassword: !!data.needPassword,
     };
   } catch {

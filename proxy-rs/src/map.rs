@@ -52,6 +52,9 @@ pub struct StatsResponse {
     pub live: LiveStats,
     pub config: ConfigInfo,
     pub model: String,
+    /// Explicit paused state from asic-rs `is_mining` (reliable as of 0.7.2) —
+    /// lets the UI drop the "hashrate ≈ 0 ⇒ paused" heuristic.
+    pub paused: bool,
     #[serde(rename = "needPassword")]
     pub need_password: bool,
 }
@@ -279,6 +282,7 @@ pub fn map_miner_data(data: &MinerData) -> StatsResponse {
             boards,
         },
         model,
+        paused: !data.is_mining,
         need_password: false,
     }
 }
@@ -399,6 +403,7 @@ mod tests {
             wattage: watts.map(Power::from_watts),
             tuning_target,
             scaled_tuning_target: None,
+            tuning_percent: None,
             tuning_capabilities: None,
             efficiency: None,
             light_flashing: None,
