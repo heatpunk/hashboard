@@ -47,7 +47,13 @@ https://github.com/heatpunk/umbrel-app-store
 Then install **Hashboard** from the store. Details and official-store submission notes live in [`umbrel/README.md`](umbrel/README.md).
 
 ### Home Assistant
-Planned — see the roadmap.
+On Home Assistant OS/Supervised, add this repo as an add-on repository — **Settings → Add-ons → Add-on Store → ⋯ → Repositories**:
+
+```
+https://github.com/heatpunk/hashboard
+```
+
+Then install the **Hashboard** add-on. Container-based installs can use the HACS integration instead — see [`hashboard-addon/DOCS.md`](hashboard-addon/DOCS.md).
 
 ## How it works
 
