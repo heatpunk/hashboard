@@ -151,7 +151,7 @@ const Index = () => {
         </h1>
         <div className="w-full grid grid-cols-3 items-center">
           <button
-            onClick={() => { try { navigator.vibrate?.(15); } catch (e) {} togglePause(miner.id); }}
+            onClick={() => { try { navigator.vibrate?.(15); } catch { /* haptics are optional */ } togglePause(miner.id); }}
             aria-label={paused ? "Resume mining" : "Pause mining"}
             className="pointer-events-auto justify-self-start relative overflow-hidden h-11 w-11 rounded-full flex items-center justify-center transition-all active:scale-90 hover:brightness-110"
             style={{ boxShadow: "0 4px 10px -4px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.5), inset 0 1.5px 2px -1px rgba(255,255,255,0.85), inset 0 -5px 8px -5px rgba(255,255,255,0.22)" }}
