@@ -62,7 +62,7 @@ function SonarSweep() {
         style={{
           animationDuration: "6s",
           background:
-            "conic-gradient(from 0deg, transparent 0deg, transparent 195deg, hsl(140 70% 55% / 0.03) 225deg, hsl(140 75% 58% / 0.12) 290deg, hsl(140 80% 62% / 0.5) 342deg, hsl(140 90% 72% / 0.95) 356deg, hsl(140 95% 82%) 360deg)",
+            "conic-gradient(from 0deg, transparent 0deg, transparent 290deg, hsl(140 70% 55% / 0.04) 308deg, hsl(140 75% 58% / 0.15) 330deg, hsl(140 80% 62% / 0.5) 347deg, hsl(140 90% 72% / 0.95) 356deg, hsl(140 95% 82%) 360deg)",
         }}
       />
       <span
