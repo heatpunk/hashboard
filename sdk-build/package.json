@@ -1,5 +1,5 @@
 {
-  "name": "hashboard-startos-sdk-build",
+  "name": "blisspoint-startos-sdk-build",
   "private": true,
   "scripts": {
     "build": "rm -rf ./javascript && ( cd ../startos && find . -name '*.ts' -exec cp --parents -f {} ../sdk-build/ ';' ) && ncc build index.ts -o ./javascript",

@@ -1,4 +1,4 @@
-//! Mapping from asic-rs `MinerData` to Hashboard's HTTP JSON contract.
+//! Mapping from asic-rs `MinerData` to Blisspoint's HTTP JSON contract.
 //!
 //! This module is a pure function — no network, no async — so it is easy
 //! to unit-test with constructed `MinerData` values.
@@ -42,7 +42,7 @@ pub struct ConfigInfo {
     /// Always null — Braiins power floor is not on the open API.
     #[serde(rename = "powerMin")]
     pub power_min: Option<f64>,
-    /// Active vs total hashboards; null when active == 0.
+    /// Active vs total blisspoints; null when active == 0.
     pub boards: Option<BoardsInfo>,
 }
 
@@ -63,24 +63,24 @@ pub struct StatsResponse {
 // Board-count helpers (replicate proxy.cjs `modelBoardCount` / `activeBoardCount`)
 // ---------------------------------------------------------------------------
 
-/// Physical hashboard count from model name.
+/// Physical blisspoint count from model name.
 /// Antminer S/T 9/17/19/21 → 3; default 3.
 /// (Virtually all Antminer S/T-series models have 3 boards, so the default is also 3.)
 fn model_board_count_from_name(_model: &str) -> u32 {
     3
 }
 
-/// Number of hashboards that are actively hashing.
+/// Number of blisspoints that are actively hashing.
 ///
 /// Uses `BoardData.active` (Some(true)) to mirror the old proxy's
 /// `devs.filter(d => d.Enabled === 'Y' && d.Status === 'Alive').length`.
 /// Falls back to the count of boards that have any hashrate or working chips.
 fn active_board_count(data: &MinerData) -> u32 {
     // If any board has an explicit `active` field set, use that count.
-    let has_explicit_active_field = data.hashboards.iter().any(|b| b.active.is_some());
+    let has_explicit_active_field = data.blisspoints.iter().any(|b| b.active.is_some());
     if has_explicit_active_field {
         return data
-            .hashboards
+            .blisspoints
             .iter()
             .filter(|b| b.active == Some(true))
             .count() as u32;
@@ -88,7 +88,7 @@ fn active_board_count(data: &MinerData) -> u32 {
 
     // Fall back: boards with any hashrate or working chips
     let fallback = data
-        .hashboards
+        .blisspoints
         .iter()
         .filter(|b| {
             b.hashrate.as_ref().map(|hr| hr.value > 0.0).unwrap_or(false)
@@ -99,7 +99,7 @@ fn active_board_count(data: &MinerData) -> u32 {
         return fallback as u32;
     }
     // Last resort: total number of boards reported
-    data.hashboards.len() as u32
+    data.blisspoints.len() as u32
 }
 
 /// Whole-machine configured power target in watts.
@@ -155,7 +155,7 @@ fn min_power_target(data: &MinerData) -> Option<f64> {
 // Main mapping function
 // ---------------------------------------------------------------------------
 
-/// Map asic-rs `MinerData` to Hashboard's `/api/miners/{ip}/stats` response.
+/// Map asic-rs `MinerData` to Blisspoint's `/api/miners/{ip}/stats` response.
 pub fn map_miner_data(data: &MinerData) -> StatsResponse {
     // --- live.th ---
     // Current hashrate in TH/s; 0.0 when paused.
@@ -178,7 +178,7 @@ pub fn map_miner_data(data: &MinerData) -> StatsResponse {
     let chip_temp: Option<f64> = {
         let mut temps: Vec<f64> = Vec::new();
 
-        for board in &data.hashboards {
+        for board in &data.blisspoints {
             // outlet_chip_temperature = hottest chip on this board
             if let Some(t) = board.outlet_chip_temperature {
                 let c = t.as_celsius();
@@ -194,7 +194,7 @@ pub fn map_miner_data(data: &MinerData) -> StatsResponse {
         }
 
         // Also check chip-level temperatures
-        for board in &data.hashboards {
+        for board in &data.blisspoints {
             for chip in &board.chips {
                 if let Some(t) = chip.temperature {
                     let c = t.as_celsius();
@@ -251,9 +251,9 @@ pub fn map_miner_data(data: &MinerData) -> StatsResponse {
 
     // --- config.boards ---
     let active = active_board_count(data);
-    // Expected hashboards from device_info; fall back to model name heuristic.
+    // Expected blisspoints from device_info; fall back to model name heuristic.
     let total_from_model = data
-        .expected_hashboards
+        .expected_blisspoints
         .map(|n| n as u32)
         .unwrap_or_else(|| model_board_count_from_name(&model));
     let total = total_from_model.max(active);
@@ -362,7 +362,7 @@ mod tests {
     fn base_data(
         hashrate_th: Option<f64>,
         watts: Option<f64>,
-        hashboards: Vec<BoardData>,
+        blisspoints: Vec<BoardData>,
         fans_rpm: Vec<f64>,
         tuning_target: Option<TuningTarget>,
     ) -> MinerData {
@@ -377,8 +377,8 @@ mod tests {
             api_version: None,
             firmware_version: None,
             control_board_version: None,
-            expected_hashboards: Some(3),
-            hashboards,
+            expected_blisspoints: Some(3),
+            blisspoints,
             hashrate: hashrate_th.map(|v| HashRate {
                 value: v,
                 unit: HashRateUnit::TeraHash,
@@ -486,7 +486,7 @@ mod tests {
         let r = map_miner_data(&data);
         let b = r.config.boards.unwrap();
         assert_eq!(b.active, 2);
-        // total = max(2, expected_hashboards=3) = 3
+        // total = max(2, expected_blisspoints=3) = 3
         assert_eq!(b.total, 3);
     }
 

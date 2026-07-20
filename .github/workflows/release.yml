@@ -120,16 +120,16 @@ jobs:
             --instructions startos/instructions.md \
             --license LICENSE \
             --no-assets \
-            -o hashboard.s9pk
+            -o blisspoint.s9pk
 
       - name: Inspect manifest
-        run: start-cli s9pk inspect hashboard.s9pk manifest
+        run: start-cli s9pk inspect blisspoint.s9pk manifest
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.version }}
           name: v${{ steps.ver.outputs.version }}
-          files: hashboard.s9pk
+          files: blisspoint.s9pk
           generate_release_notes: true
           fail_on_unmatched_files: true

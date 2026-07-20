@@ -1,6 +1,6 @@
 name: Test build (s9pk artifact)
 
-# Builds a sideloadable hashboard.s9pk and uploads it as a workflow ARTIFACT —
+# Builds a sideloadable blisspoint.s9pk and uploads it as a workflow ARTIFACT —
 # no public GitHub Release, no git tag. For testing this branch before merge.
 # Download the artifact from the run's summary page, unzip, sideload in StartOS.
 # The version is read from startos/manifest (the dockerTag), so it always matches.
@@ -29,7 +29,7 @@ jobs:
       - name: Resolve version from manifest
         id: ver
         run: |
-          v=$(grep -oP "hashboard:\K[0-9]+\.[0-9]+\.[0-9]+" startos/manifest/index.ts | head -1)
+          v=$(grep -oP "blisspoint:\K[0-9]+\.[0-9]+\.[0-9]+" startos/manifest/index.ts | head -1)
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "Building version $v"
 
@@ -98,15 +98,15 @@ jobs:
             --instructions startos/instructions.md \
             --license LICENSE \
             --no-assets \
-            -o hashboard.s9pk
+            -o blisspoint.s9pk
 
       - name: Inspect manifest
-        run: start-cli s9pk inspect hashboard.s9pk manifest
+        run: start-cli s9pk inspect blisspoint.s9pk manifest
 
       - name: Upload s9pk artifact
         uses: actions/upload-artifact@v5
         with:
-          name: hashboard-${{ needs.docker.outputs.version }}-s9pk
-          path: hashboard.s9pk
+          name: blisspoint-${{ needs.docker.outputs.version }}-s9pk
+          path: blisspoint.s9pk
           retention-days: 14
           if-no-files-found: error
