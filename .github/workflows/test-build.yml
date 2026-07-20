@@ -29,7 +29,7 @@ jobs:
       - name: Resolve version from manifest
         id: ver
         run: |
-          v=$(grep -oP "blisspoint:\K[0-9]+\.[0-9]+\.[0-9]+" startos/manifest/index.ts | head -1)
+          v=$(grep -oP "blisspoint: { source: { dockerTag: 'ghcr.io/heatpunk/blisspoint:\K[0-9]+\.[0-9]+\.[0-9]+" startos/manifest/index.ts | head -1)
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "Building version $v"
 
@@ -50,7 +50,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.version }}
           cache-from: type=gha
