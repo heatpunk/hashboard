@@ -7,7 +7,7 @@ name: Test build (s9pk artifact)
 
 on:
   push:
-    branches: [claude/asic-rs-proxy]
+    branches: [claude/asic-rs-proxy, feature/rename-to-blisspoint]
   workflow_dispatch:
 
 env:
