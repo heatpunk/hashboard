@@ -64,6 +64,7 @@ jobs:
           npm run build
           # Generate manifest.json from the JS build
           node -e "const { manifest } = require('./javascript/index.js'); console.log(JSON.stringify(manifest, null, 2))" > manifest.json
+          cp manifest.json ..
 
       - name: Pack s9pk (with workspace fix)
         run: |
@@ -74,10 +75,10 @@ jobs:
           echo '[server]' > ~/.start9/config.toml
           echo 'url = "http://127.0.0.1"' >> ~/.start9/config.toml
           
-          # Pack using explicit flags to avoid directory resolution issues and the need for a workspace
+          # Pack using explicit flags to avoid directory resolution issues
+          # Note: manifest.json is now in the root
           start-cli s9pk pack \
-            --manifest sdk-build/manifest.json \
-            --javascript sdk-build/javascript/index.js \
+            --javascript sdk-build/javascript \
             --icon startos/icon.png \
             --instructions startos/instructions.md \
             --license LICENSE \
