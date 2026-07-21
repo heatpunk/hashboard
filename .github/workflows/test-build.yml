@@ -74,9 +74,6 @@ jobs:
           start-cli s9pk init-workspace
           cd hashboard
           
-          # Configure start-cli to avoid DNS errors during packing
-          start-cli config set url http://localhost
-          
           # Pack using explicit flags to avoid directory resolution issues
           start-cli s9pk pack \
             --manifest sdk-build/manifest.json \
