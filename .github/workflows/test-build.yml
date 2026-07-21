@@ -69,23 +69,22 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           
-          # Prepare build directory in the format start-cli expects
-          mkdir -p build_dir/javascript
-          cp sdk-build/manifest.json build_dir/manifest.json
-          cp sdk-build/javascript/index.js build_dir/javascript/index.js
-          cp startos/icon.png build_dir/icon.png
-          cp startos/instructions.md build_dir/instructions.md
-          cp LICENSE build_dir/LICENSE
-          
-          # Setup a dummy workspace to satisfy start-cli
+          # Initialize workspace in the parent directory as required by start-cli 0.3.5+
           cd ..
-          mkdir -p .start9
-          echo '[server]' > .start9/config.toml
-          echo 'url = "http://localhost"' >> .start9/config.toml
-          
-          # Go back to the repo and pack
+          start-cli s9pk init-workspace
           cd hashboard
-          start-cli s9pk pack build_dir -o blisspoint.s9pk
+          
+          # Configure start-cli to avoid DNS errors during packing
+          start-cli config set url http://localhost
+          
+          # Pack using explicit flags to avoid directory resolution issues
+          start-cli s9pk pack \
+            --manifest sdk-build/manifest.json \
+            --javascript sdk-build/javascript/index.js \
+            --icon startos/icon.png \
+            --instructions startos/instructions.md \
+            --license LICENSE \
+            -o blisspoint.s9pk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
