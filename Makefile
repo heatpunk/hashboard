@@ -17,18 +17,20 @@ manifest.json: sdk-build/javascript/index.js
 	node -e "console.log(JSON.stringify(require('./sdk-build/javascript/index.js').manifest, null, 2))" > manifest.json
 
 pack: manifest.json sdk-build/javascript/index.js
+	rm -rf ./javascript
+	cp -r sdk-build/javascript ./javascript
 	start-cli s9pk pack \
-		
-		--javascript $(CURDIR)/sdk-build/javascript \
+		--javascript $(CURDIR)/javascript \
 		--icon startos/icon.png \
 		--instructions startos/instructions.md \
 		--license LICENSE \
 		--no-assets \
 		-o $(PKG)
+	rm -rf ./javascript
 
 inspect:
 	start-cli s9pk inspect $(PKG) manifest
 
 clean:
-	rm -f $(PKG)
-	rm -rf sdk-build/javascript sdk-build/node_modules
+	rm -f $(PKG) manifest.json
+	rm -rf sdk-build/javascript sdk-build/node_modules ./javascript
