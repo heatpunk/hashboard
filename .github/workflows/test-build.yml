@@ -60,25 +60,25 @@ jobs:
       - name: Build SDK JavaScript
         run: |
           cd sdk-build
-          npm ci
+          npm install
           npm run build
+          # Generate manifest.json from the JS build
+          node -e "const { manifest } = require('./javascript/index.js'); console.log(JSON.stringify(manifest, null, 2))" > manifest.json
 
       - name: Pack s9pk (with workspace fix)
         run: |
-          mkdir -p ../workspace
-          cp -r . ../workspace/blisspoint
-          cd ../workspace
-          start-cli s9pk init-workspace
-          cd blisspoint
-          start-cli init-key
+          # Configure start-cli to avoid DNS errors
+          export PATH="$HOME/.local/bin:$PATH"
+          start-cli config set url http://localhost || true
+          
+          # Pack s9pk using the manifest and other files
           start-cli s9pk pack \
-            --javascript ./sdk-build/javascript \
-            --icon ./startos/icon.png \
-            --instructions ./startos/instructions.md \
-            --license ./LICENSE \
-            --no-assets \
+            --manifest sdk-build/manifest.json \
+            --javascript sdk-build/javascript/index.js \
+            --icon startos/icon.png \
+            --instructions startos/instructions.md \
+            --license LICENSE \
             -o blisspoint.s9pk
-          cp blisspoint.s9pk $GITHUB_WORKSPACE/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
