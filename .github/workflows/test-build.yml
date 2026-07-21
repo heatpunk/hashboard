@@ -57,16 +57,7 @@ jobs:
           curl -fsSL https://start9.com/start-cli/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Build SDK JavaScript
-        run: |
-          cd sdk-build
-          npm install
-          npm run build
-          # Generate manifest.json from the JS build
-          node -e "const { manifest } = require('./javascript/index.js'); console.log(JSON.stringify(manifest, null, 2))" > manifest.json
-          cp manifest.json ..
-
-      - name: Pack s9pk (with workspace fix)
+      - name: Build s9pk
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           
@@ -75,15 +66,8 @@ jobs:
           echo '[server]' > ~/.start9/config.toml
           echo 'url = "http://127.0.0.1"' >> ~/.start9/config.toml
           
-          # Pack using explicit flags to avoid directory resolution issues
-          # Note: manifest.json is now in the root
-          start-cli s9pk pack \
-            --javascript sdk-build/javascript \
-            --icon startos/icon.png \
-            --instructions startos/instructions.md \
-            --license LICENSE \
-            --no-assets \
-            -o blisspoint.s9pk
+          # Use the project's Makefile logic
+          make pack
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
