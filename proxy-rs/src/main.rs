@@ -1,4 +1,4 @@
-//! Blisspoint proxy-rs — Rust replacement for server/proxy.cjs
+//! Hashboard proxy-rs — Rust replacement for server/proxy.cjs
 //!
 //! Listens on 127.0.0.1:8081 (same address the old Node proxy used so that
 //! server/serve.cjs and the React app continue to work without modification).
@@ -276,9 +276,11 @@ async fn miner_set_power(
         return bad_request("watts must be positive");
     }
 
-    let password = body.as_ref().and_then(|b| {
-        if b.password.is_empty() { None } else { Some(b.password.clone()) }
-    });
+    let password = if body.password.is_empty() {
+        None
+    } else {
+        Some(body.password.clone())
+    };
 
     let factory = MinerFactory::new();
     let mut miner = match factory.get_miner(addr).await {
