@@ -66,6 +66,7 @@ jobs:
           node -e "const { manifest } = require('./javascript/index.js'); console.log(JSON.stringify(manifest, null, 2))" > manifest.json
 
       - name: Pack s9pk (with workspace fix)
+        # We use a temporary build_dir to ensure start-cli finds manifest.json and javascript/index.js correctly
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           

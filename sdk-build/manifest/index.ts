@@ -13,7 +13,7 @@ export const manifest = setupManifest({
   volumes: ['main'],
   images: {
     blisspoint: {
-      source: { dockerTag: 'ghcr.io/heatpunk/blisspoint:0.1.1' },
+      source: { dockerTag: 'ghcr.io/heatpunk/blisspoint:0.5.2' },
       arch: ['x86_64'],
     },
   },
