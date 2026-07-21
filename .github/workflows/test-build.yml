@@ -67,18 +67,18 @@ jobs:
 
       - name: Pack s9pk (with workspace fix)
         run: |
-          # Configure start-cli to avoid DNS errors
           export PATH="$HOME/.local/bin:$PATH"
-          start-cli config set url http://localhost || true
           
-          # Pack s9pk using the manifest and other files
-          start-cli s9pk pack \
-            --manifest sdk-build/manifest.json \
-            --javascript sdk-build/javascript/index.js \
-            --icon startos/icon.png \
-            --instructions startos/instructions.md \
-            --license LICENSE \
-            -o blisspoint.s9pk
+          # Prepare build directory in the format start-cli expects
+          mkdir -p build_dir/javascript
+          cp sdk-build/manifest.json build_dir/manifest.json
+          cp sdk-build/javascript/index.js build_dir/javascript/index.js
+          cp startos/icon.png build_dir/icon.png
+          cp startos/instructions.md build_dir/instructions.md
+          cp LICENSE build_dir/LICENSE
+          
+          # Pack the directory
+          start-cli s9pk pack build_dir -o blisspoint.s9pk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
