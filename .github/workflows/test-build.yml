@@ -77,8 +77,9 @@ jobs:
           cp startos/instructions.md build_dir/instructions.md
           cp LICENSE build_dir/LICENSE
           
-          # Pack the directory
-          start-cli s9pk pack build_dir -o blisspoint.s9pk
+          # Pack the directory (running from within the directory to help resolution)
+          cd build_dir
+          start-cli s9pk pack . -o ../blisspoint.s9pk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
