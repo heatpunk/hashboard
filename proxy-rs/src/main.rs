@@ -20,6 +20,7 @@ use std::str::FromStr;
 use asic_rs::MinerFactory;
 use asic_rs_core::config::tuning::TuningConfig;
 use asic_rs_core::data::miner::TuningTarget;
+use asic_rs_core::traits::auth::MinerAuth;
 use axum::{
     Router,
     extract::{Path, Query, State},
@@ -188,7 +189,7 @@ async fn handle_pause_resume(
     };
 
     if let Some(pw) = password {
-        miner.set_auth(Some(pw));
+        miner.set_auth(MinerAuth::new("root", pw));
     }
 
     // Issue #31 decision: use native pause/resume from asic-rs Pause/Resume traits.
@@ -300,7 +301,7 @@ async fn miner_set_power(
     };
 
     if let Some(pw) = password {
-        miner.set_auth(Some(pw));
+        miner.set_auth(MinerAuth::new("root", pw));
     }
 
     // BraiinsOS+ v26.04+ (including v26.06) returns false from supports_tuning_config()
