@@ -66,25 +66,23 @@ jobs:
           node -e "const { manifest } = require('./javascript/index.js'); console.log(JSON.stringify(manifest, null, 2))" > manifest.json
 
       - name: Pack s9pk (with workspace fix)
-        # We use a temporary build_dir to ensure start-cli finds manifest.json and javascript/index.js correctly
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           
-          # Initialize workspace in the parent directory
-          cd ..
-          start-cli s9pk init-workspace
-          cd hashboard
+          # Setup a local dummy config to prevent start-cli from looking for dev-vm.local
+          mkdir -p ~/.start9
+          echo '[server]' > ~/.start9/config.toml
+          echo 'url = "http://127.0.0.1"' >> ~/.start9/config.toml
           
-          # Prepare build directory in the format start-cli expects
-          mkdir -p build_dir/javascript
-          cp sdk-build/manifest.json build_dir/manifest.json
-          cp sdk-build/javascript/index.js build_dir/javascript/index.js
-          cp startos/icon.png build_dir/icon.png
-          cp startos/instructions.md build_dir/instructions.md
-          cp LICENSE build_dir/LICENSE
-          
-          # Pack using absolute path to avoid Node.js require issues
-          start-cli s9pk pack $(pwd)/build_dir -o blisspoint.s9pk
+          # Pack using explicit flags to avoid directory resolution issues and the need for a workspace
+          start-cli s9pk pack \
+            --manifest sdk-build/manifest.json \
+            --javascript sdk-build/javascript/index.js \
+            --icon startos/icon.png \
+            --instructions startos/instructions.md \
+            --license LICENSE \
+            --no-assets \
+            -o blisspoint.s9pk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
