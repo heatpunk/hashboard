@@ -18,7 +18,7 @@ manifest.json: sdk-build/javascript/index.js
 
 pack: manifest.json sdk-build/javascript/index.js
 	start-cli s9pk pack \
-		--manifest manifest.json \
+		
 		--javascript $(CURDIR)/sdk-build/javascript \
 		--icon startos/icon.png \
 		--instructions startos/instructions.md \
