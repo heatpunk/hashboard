@@ -71,7 +71,14 @@ jobs:
           echo '[server]' > ~/.start9/config.toml
           echo 'url = "http://127.0.0.1"' >> ~/.start9/config.toml
           
-          # Use the project's Makefile logic
+          # Initialize the packaging workspace in the parent directory (required by start-cli 1.0.x)
+          # In GitHub Actions, the runner works in /home/runner/work/hashboard/hashboard.
+          # We initialize the workspace in /home/runner/work/hashboard.
+          cd ..
+          start-cli s9pk init-workspace .
+          
+          # Go back to the repo directory and pack
+          cd hashboard
           make pack
 
       - name: Upload artifact
