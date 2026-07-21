@@ -69,19 +69,21 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           
-          # Initialize workspace in the parent directory as required by start-cli 0.3.5+
+          # Initialize workspace in the parent directory
           cd ..
           start-cli s9pk init-workspace
           cd hashboard
           
-          # Pack using explicit flags to avoid directory resolution issues
-          start-cli s9pk pack \
-            --manifest sdk-build/manifest.json \
-            --javascript sdk-build/javascript/index.js \
-            --icon startos/icon.png \
-            --instructions startos/instructions.md \
-            --license LICENSE \
-            -o blisspoint.s9pk
+          # Prepare build directory in the format start-cli expects
+          mkdir -p build_dir/javascript
+          cp sdk-build/manifest.json build_dir/manifest.json
+          cp sdk-build/javascript/index.js build_dir/javascript/index.js
+          cp startos/icon.png build_dir/icon.png
+          cp startos/instructions.md build_dir/instructions.md
+          cp LICENSE build_dir/LICENSE
+          
+          # Pack using absolute path to avoid Node.js require issues
+          start-cli s9pk pack $(pwd)/build_dir -o blisspoint.s9pk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

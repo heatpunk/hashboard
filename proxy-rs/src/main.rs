@@ -1,4 +1,4 @@
-//! Hashboard proxy-rs — Rust replacement for server/proxy.cjs
+//! Blisspoint proxy-rs — Rust replacement for server/proxy.cjs
 //!
 //! Listens on 127.0.0.1:8081 (same address the old Node proxy used so that
 //! server/serve.cjs and the React app continue to work without modification).
