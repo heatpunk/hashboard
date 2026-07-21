@@ -13,8 +13,12 @@ sdk-build/node_modules: sdk-build/package.json
 	npm --prefix sdk-build ci
 
 # Pack the s9pk (requires SDK javascript built and GHCR image available)
-pack: sdk-build/javascript/index.js
+manifest.json: sdk-build/javascript/index.js
+	node -e "console.log(JSON.stringify(require('./sdk-build/javascript/index.js').manifest, null, 2))" > manifest.json
+
+pack: manifest.json sdk-build/javascript/index.js
 	start-cli s9pk pack \
+		--manifest manifest.json \
 		--javascript $(CURDIR)/sdk-build/javascript \
 		--icon startos/icon.png \
 		--instructions startos/instructions.md \
