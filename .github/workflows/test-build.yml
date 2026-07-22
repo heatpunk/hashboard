@@ -67,32 +67,23 @@ jobs:
           curl -fsSL https://start9.com/start-cli/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Build s9pk using Makefile
+      - name: Build s9pk
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           
-          # Initialize workspace structure
+          # Initialize workspace in parent directory to satisfy start-cli requirements
           cd ..
           start-cli s9pk init-workspace .
           sed -i 's|https://dev-vm.local|http://127.0.0.1|g' .startos/config.yaml
           
           cd hashboard
           
-          # Build JS dependencies
+          # Install pnpm and build SDK
           npm install -g pnpm
           pnpm --prefix sdk-build install
           pnpm --prefix sdk-build run build
           
-          # Prepare directory structure that Makefile might expect
-          rm -rf ./javascript
-          cp -r sdk-build/javascript ./javascript
-          echo '{"type": "commonjs"}' > ./javascript/package.json
-          
-          # Generate manifest for the Makefile logic
-          node -e "const m = require('./javascript/index.js'); console.log(JSON.stringify(m.manifest || m.parsedManifest || m.default, null, 2))" > manifest.json
-          
-          # Use the project's Makefile to ensure assets.squashfs is created and included
-          # We define PKG manually to match the desired output name
+          # Use Makefile to pack, which now correctly handles assets
           make PKG=blisspoint.s9pk
 
       - name: Upload artifact
