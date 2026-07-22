@@ -55,7 +55,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install start-cli
         run: |
@@ -76,6 +76,13 @@ jobs:
           # We initialize the workspace in /home/runner/work/hashboard.
           cd ..
           start-cli s9pk init-workspace .
+          
+          # Overwrite the generated config to avoid dev-vm.local DNS resolution error
+          cat << 'INNER_EOF' > .startos/config.yaml
+          schema: 1
+          host:
+            default: http://127.0.0.1
+          INNER_EOF
           
           # Go back to the repo directory and pack
           cd hashboard
