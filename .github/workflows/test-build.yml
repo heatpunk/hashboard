@@ -51,6 +51,7 @@ jobs:
     needs: docker
     env:
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v5
 
@@ -68,35 +69,53 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           
-          # Clean up any potential junk from home
+          # Clean environment
           rm -rf ~/.start9 ~/.startos
           
           # Initialize workspace in parent directory
           cd ..
           start-cli s9pk init-workspace .
           
-          # Patch workspace config to prevent DNS lookup of dev-vm.local
+          # Patch workspace config
           sed -i 's|https://dev-vm.local|http://127.0.0.1|g' .startos/config.yaml
           
           # Go back to repo
           cd hashboard
           
-          # Build SDK bits
+          # Install pnpm and build SDK
           npm install -g pnpm
           pnpm --prefix sdk-build install
           pnpm --prefix sdk-build run build
           
-          # Prepare directory structure for start-cli
+          # Structure for start-cli
           rm -rf ./javascript
           cp -r sdk-build/javascript ./javascript
           
-          # Robust manifest extraction looking for 'parsedManifest'
-          node -e "const m = require('./javascript/index.js'); const manifest = m.parsedManifest || m.manifest || m.default || m; if (!manifest || Object.keys(manifest).length === 0) { console.error('Error: Extracted manifest is empty!'); process.exit(1); } console.log(JSON.stringify(manifest, null, 2))" > manifest.json
+          # Robust manifest generation
+          # We check specifically for 'manifest' or 'parsedManifest'
+          # We use a temporary script to avoid shell escaping issues with complex node commands
+          cat << 'NODE_SCRIPT' > get-manifest.js
+          try {
+            const m = require('./javascript/index.js');
+            const manifest = m.parsedManifest || m.manifest || m.default;
+            if (manifest && Object.keys(manifest).length > 0) {
+              console.log(JSON.stringify(manifest, null, 2));
+            } else {
+              console.error('Available keys in bundle:', Object.keys(m));
+              process.exit(1);
+            }
+          } catch (e) {
+            console.error('Failed to require bundle:', e.message);
+            process.exit(1);
+          }
+          NODE_SCRIPT
+          
+          node get-manifest.js > manifest.json
           
           echo "=== DEBUG: manifest.json ==="
           cat manifest.json
           
-          # Run pack with absolute paths
+          # Run pack
           start-cli s9pk pack \
             --javascript "$PWD/javascript" \
             --icon "$PWD/startos/icon.png" \
