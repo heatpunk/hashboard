@@ -86,13 +86,12 @@ jobs:
           pnpm --prefix sdk-build install
           pnpm --prefix sdk-build run build
           
-          # Prepare directory structure for start-cli (it expects javascript/index.js)
+          # Prepare directory structure for start-cli
           rm -rf ./javascript
           cp -r sdk-build/javascript ./javascript
           
-          # Generate manifest.json (required by start-cli)
-          # We check if 'manifest' or 'default' (as manifest) exists
-          node -e "const m = require('./javascript/index.js'); console.log(JSON.stringify(m.manifest || m.default || m, null, 2))" > manifest.json
+          # Robust manifest extraction looking for 'parsedManifest'
+          node -e "const m = require('./javascript/index.js'); const manifest = m.parsedManifest || m.manifest || m.default || m; if (!manifest || Object.keys(manifest).length === 0) { console.error('Error: Extracted manifest is empty!'); process.exit(1); } console.log(JSON.stringify(manifest, null, 2))" > manifest.json
           
           echo "=== DEBUG: manifest.json ==="
           cat manifest.json
