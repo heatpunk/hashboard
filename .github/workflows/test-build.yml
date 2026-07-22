@@ -72,18 +72,41 @@ jobs:
           echo 'url = "http://127.0.0.1"' >> ~/.start9/config.toml
           
           # Initialize the packaging workspace in the parent directory (required by start-cli 1.0.x)
-          # In GitHub Actions, the runner works in /home/runner/work/hashboard/hashboard.
-          # We initialize the workspace in /home/runner/work/hashboard.
           cd ..
           start-cli s9pk init-workspace .
           
           # Use sed to safely edit the generated config, replacing dev-vm.local with 127.0.0.1.
-          # This avoids indentation syntax errors in YAML while neutralizing the DNS lookup crash.
           sed -i 's|https://dev-vm.local|http://127.0.0.1|g' .startos/config.yaml
           
-          # Go back to the repo directory and pack
+          echo "=== DEBUG: ../.startos/config.yaml ==="
+          cat .startos/config.yaml
+          
+          # Go back to the repo directory
           cd hashboard
-          make pack
+          
+          # Build JS first to ensure manifest.json is generated
+          npm --prefix sdk-build ci
+          cd sdk-build && npm run build
+          cd ..
+          
+          # Generate manifest.json
+          node -e "console.log(JSON.stringify(require('./sdk-build/javascript/index.js').manifest, null, 2))" > manifest.json
+          
+          echo "=== DEBUG: manifest.json ==="
+          cat manifest.json
+          
+          # Run pack manually to see exact output
+          rm -rf ./javascript
+          cp -r sdk-build/javascript ./javascript
+          
+          echo "=== DEBUG: Running start-cli s9pk pack ==="
+          start-cli s9pk pack \
+            --javascript $PWD/javascript \
+            --icon startos/icon.png \
+            --instructions startos/instructions.md \
+            --license LICENSE \
+            --no-assets \
+            -o blisspoint.s9pk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
