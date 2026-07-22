@@ -49,6 +49,8 @@ jobs:
     name: Build s9pk & upload artifact
     runs-on: ubuntu-latest
     needs: docker
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
       - uses: actions/checkout@v5
 
@@ -66,40 +68,29 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           
-          # Setup a local dummy config to prevent start-cli from looking for dev-vm.local
-          mkdir -p ~/.start9
-          echo '[server]' > ~/.start9/config.toml
-          echo 'url = "http://127.0.0.1"' >> ~/.start9/config.toml
-          
-          # Initialize the packaging workspace in the parent directory (required by start-cli 1.0.x)
+          # Initialize workspace in parent directory
           cd ..
           start-cli s9pk init-workspace .
           
-          # Use sed to safely edit the generated config, replacing dev-vm.local with 127.0.0.1.
+          # Patch workspace config to prevent DNS lookup of dev-vm.local
           sed -i 's|https://dev-vm.local|http://127.0.0.1|g' .startos/config.yaml
           
-          echo "=== DEBUG: ../.startos/config.yaml ==="
-          cat .startos/config.yaml
-          
-          # Go back to the repo directory
+          # Go back to repo
           cd hashboard
           
-          # Build JS first to ensure manifest.json is generated
-          npm --prefix sdk-build ci
-          cd sdk-build && npm run build
-          cd ..
+          # Build SDK bits using pnpm (standard for this repo)
+          npm install -g pnpm
+          pnpm --prefix sdk-build install
+          pnpm --prefix sdk-build run build
           
-          # Generate manifest.json
+          # Generate manifest.json (required by start-cli)
           node -e "console.log(JSON.stringify(require('./sdk-build/javascript/index.js').manifest, null, 2))" > manifest.json
           
-          echo "=== DEBUG: manifest.json ==="
-          cat manifest.json
-          
-          # Run pack manually to see exact output
+          # Prepare directory structure for start-cli
           rm -rf ./javascript
           cp -r sdk-build/javascript ./javascript
           
-          echo "=== DEBUG: Running start-cli s9pk pack ==="
+          # Run pack
           start-cli s9pk pack \
             --javascript $PWD/javascript \
             --icon startos/icon.png \
