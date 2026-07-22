@@ -77,12 +77,9 @@ jobs:
           cd ..
           start-cli s9pk init-workspace .
           
-          # Overwrite the generated config to avoid dev-vm.local DNS resolution error
-          cat << 'INNER_EOF' > .startos/config.yaml
-          schema: 1
-          host:
-            default: http://127.0.0.1
-          INNER_EOF
+          # Use sed to safely edit the generated config, replacing dev-vm.local with 127.0.0.1.
+          # This avoids indentation syntax errors in YAML while neutralizing the DNS lookup crash.
+          sed -i 's|https://dev-vm.local|http://127.0.0.1|g' .startos/config.yaml
           
           # Go back to the repo directory and pack
           cd hashboard
