@@ -68,6 +68,9 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           
+          # Clean up any potential junk from home
+          rm -rf ~/.start9 ~/.startos
+          
           # Initialize workspace in parent directory
           cd ..
           start-cli s9pk init-workspace .
@@ -78,24 +81,28 @@ jobs:
           # Go back to repo
           cd hashboard
           
-          # Build SDK bits using pnpm (standard for this repo)
+          # Build SDK bits
           npm install -g pnpm
           pnpm --prefix sdk-build install
           pnpm --prefix sdk-build run build
           
-          # Generate manifest.json (required by start-cli)
-          node -e "console.log(JSON.stringify(require('./sdk-build/javascript/index.js').manifest, null, 2))" > manifest.json
-          
-          # Prepare directory structure for start-cli
+          # Prepare directory structure for start-cli (it expects javascript/index.js)
           rm -rf ./javascript
           cp -r sdk-build/javascript ./javascript
           
-          # Run pack
+          # Generate manifest.json (required by start-cli)
+          # We check if 'manifest' or 'default' (as manifest) exists
+          node -e "const m = require('./javascript/index.js'); console.log(JSON.stringify(m.manifest || m.default || m, null, 2))" > manifest.json
+          
+          echo "=== DEBUG: manifest.json ==="
+          cat manifest.json
+          
+          # Run pack with absolute paths
           start-cli s9pk pack \
-            --javascript $PWD/javascript \
-            --icon startos/icon.png \
-            --instructions startos/instructions.md \
-            --license LICENSE \
+            --javascript "$PWD/javascript" \
+            --icon "$PWD/startos/icon.png" \
+            --instructions "$PWD/startos/instructions.md" \
+            --license "$PWD/LICENSE" \
             --no-assets \
             -o blisspoint.s9pk
 
