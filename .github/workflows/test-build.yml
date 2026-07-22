@@ -49,9 +49,6 @@ jobs:
     name: Build s9pk & upload artifact
     runs-on: ubuntu-latest
     needs: docker
-    env:
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v5
 
@@ -60,75 +57,43 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y squashfs-tools-ng
+          sudo apt-get install -y squashfs-tools-ng squashfs-tools
 
       - name: Install start-cli
         run: |
           curl -fsSL https://start9.com/start-cli/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Build s9pk
+      - name: Build s9pk using Makefile
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           
-          # Clean environment
-          rm -rf ~/.start9 ~/.startos
-          
-          # Initialize workspace in parent directory
+          # Initialize workspace structure
           cd ..
           start-cli s9pk init-workspace .
-          
-          # Patch workspace config to avoid dev-vm.local DNS krasch
           sed -i 's|https://dev-vm.local|http://127.0.0.1|g' .startos/config.yaml
           
-          # Go back to repo
           cd hashboard
           
-          # Install pnpm and build SDK
+          # Build JS dependencies
           npm install -g pnpm
           pnpm --prefix sdk-build install
           pnpm --prefix sdk-build run build
           
-          # Structure for start-cli
+          # Prepare directory structure that Makefile might expect
           rm -rf ./javascript
           cp -r sdk-build/javascript ./javascript
-          
-          # Force the 'javascript' directory to be treated as CommonJS to match ncc output
           echo '{"type": "commonjs"}' > ./javascript/package.json
           
-          # Extraction script as .cjs to bypass root package.json type: module
-          cat << 'NODE_SCRIPT' > get-manifest.cjs
-          try {
-            const m = require('./javascript/index.js');
-            const manifest = m.manifest || m.parsedManifest || m.default;
-            if (manifest && Object.keys(manifest).length > 0) {
-              console.log(JSON.stringify(manifest, null, 2));
-            } else {
-              console.error('Available keys in bundle:', Object.keys(m));
-              process.exit(1);
-            }
-          } catch (e) {
-            console.error('Failed to load bundle:', e.stack);
-            process.exit(1);
-          }
-          NODE_SCRIPT
+          # Generate manifest for the Makefile logic
+          node -e "const m = require('./javascript/index.js'); console.log(JSON.stringify(m.manifest || m.parsedManifest || m.default, null, 2))" > manifest.json
           
-          node get-manifest.cjs > manifest.json
-          
-          echo "=== DEBUG: manifest.json ==="
-          cat manifest.json
-          
-          # Run pack
-          start-cli s9pk pack \
-            --javascript "$PWD/javascript" \
-            --icon "$PWD/startos/icon.png" \
-            --instructions "$PWD/startos/instructions.md" \
-            --license "$PWD/LICENSE" \
-            --no-assets \
-            -o blisspoint.s9pk
+          # Use the project's Makefile to ensure assets.squashfs is created and included
+          # We define PKG manually to match the desired output name
+          make PKG=blisspoint.s9pk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
