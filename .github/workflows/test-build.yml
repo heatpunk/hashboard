@@ -51,7 +51,6 @@ jobs:
     needs: docker
     env:
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v5
 
@@ -76,7 +75,7 @@ jobs:
           cd ..
           start-cli s9pk init-workspace .
           
-          # Patch workspace config
+          # Patch workspace config to avoid dev-vm.local DNS krasch
           sed -i 's|https://dev-vm.local|http://127.0.0.1|g' .startos/config.yaml
           
           # Go back to repo
@@ -91,13 +90,14 @@ jobs:
           rm -rf ./javascript
           cp -r sdk-build/javascript ./javascript
           
-          # Robust manifest generation
-          # We check specifically for 'manifest' or 'parsedManifest'
-          # We use a temporary script to avoid shell escaping issues with complex node commands
-          cat << 'NODE_SCRIPT' > get-manifest.js
+          # Force the 'javascript' directory to be treated as CommonJS to match ncc output
+          echo '{"type": "commonjs"}' > ./javascript/package.json
+          
+          # Extraction script as .cjs to bypass root package.json type: module
+          cat << 'NODE_SCRIPT' > get-manifest.cjs
           try {
             const m = require('./javascript/index.js');
-            const manifest = m.parsedManifest || m.manifest || m.default;
+            const manifest = m.manifest || m.parsedManifest || m.default;
             if (manifest && Object.keys(manifest).length > 0) {
               console.log(JSON.stringify(manifest, null, 2));
             } else {
@@ -105,12 +105,12 @@ jobs:
               process.exit(1);
             }
           } catch (e) {
-            console.error('Failed to require bundle:', e.message);
+            console.error('Failed to load bundle:', e.stack);
             process.exit(1);
           }
           NODE_SCRIPT
           
-          node get-manifest.js > manifest.json
+          node get-manifest.cjs > manifest.json
           
           echo "=== DEBUG: manifest.json ==="
           cat manifest.json
