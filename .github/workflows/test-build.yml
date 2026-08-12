@@ -7,10 +7,15 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
-  build:
+  docker:
     name: Build test package
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -51,13 +56,6 @@ jobs:
       packages: read
     steps:
       - uses: actions/checkout@v4
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install squashfs-tools-ng
         run: sudo apt-get update && sudo apt-get install -y squashfs-tools-ng
